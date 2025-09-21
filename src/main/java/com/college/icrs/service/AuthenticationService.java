@@ -10,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.swing.*;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
@@ -31,7 +32,9 @@ public class AuthenticationService {
     }
 
     public User signup(RegisterUserDto input){
+//        System.out.println("+++++++++++++++++++++++++++++\n"+"Email: "+input.getEmail() +" Pass: "+ input.getPassword() +" Name: "+ input.getUsername()+"\n+++++++++++++++++++++++++++++");
         User user = new User(input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()));
+//        System.out.println("+++++++++++++++++++++++++++++\n"+"Email: "+user.getEmail() +" Pass: "+ user.getPassword() +" Name: "+ user.getUsername()+"\n+++++++++++++++++++++++++++++");
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         user.setEnabled(true);
