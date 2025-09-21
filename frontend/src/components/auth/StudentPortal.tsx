@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
+
 const StudentPortal: React.FC = () => {
   const navigate = useNavigate();
   const [role, setRole] = useState("student");
@@ -49,7 +50,7 @@ const StudentPortal: React.FC = () => {
           <img
             src={logo}
             alt="College Logo"
-            style={{ width: "100%", height: "auto" }}
+            style={{ width: "100%", height: "auto", marginBottom: "10px" }}
           />
           <Typography variant="h6" fontWeight="bold">
             SGGS COLLEGE REDRESSAL SYSTEM
@@ -111,6 +112,16 @@ const StudentPortal: React.FC = () => {
             onClick={() => navigate("/auth/first-page")}
           >
             Submit
+          </Button>
+
+          {/* Back to Login */}
+          <Button
+            fullWidth
+            variant="outlined"
+            sx={{ mt: 2 }}
+            onClick={() => navigate("/auth/login")}
+          >
+            Back to Login
           </Button>
         </CardContent>
       </Card>

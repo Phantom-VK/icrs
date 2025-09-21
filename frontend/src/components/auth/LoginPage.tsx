@@ -1,9 +1,27 @@
-import React from "react";
+// components/auth/LoginPage.tsx
+import React, { useState } from "react";
 import { TextField, Button, Card, CardContent, Typography, Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
+
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = () => {
+    // Hardcoded faculty credentials (temporary until backend)
+    const facultyEmail = "itfaculty01@sggs.ac.in";
+    const facultyPassword = "itdepartment01";
+
+    if (email === facultyEmail && password === facultyPassword) {
+      // Faculty → Faculty grievance page
+      navigate("/faculty/grievances");
+    } else {
+      // Students (any email/password for now) → Student flow
+      navigate("/auth/first-page");
+    }
+  };
 
   return (
     <Box
@@ -28,25 +46,43 @@ const LoginPage: React.FC = () => {
           </Typography>
         </Box>
         <CardContent>
-          <TextField fullWidth label="College Email" margin="normal" />
-          <TextField fullWidth label="Password" type="password" margin="normal" />
+          {/* Email */}
+          <TextField
+            fullWidth
+            label="College Email"
+            margin="normal"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          {/* Password */}
+          <TextField
+            fullWidth
+            label="Password"
+            type="password"
+            margin="normal"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
           {/* Sign In */}
           <Button
             fullWidth
             variant="contained"
             sx={{ mt: 2 }}
-            onClick={() => navigate("/auth/first-page")}
+            onClick={handleLogin}
           >
             Sign In
           </Button>
 
-          {/* Forgot Password (UI only for now) */}
+          {/* Forgot Password (UI only) */}
           <Button
             fullWidth
             variant="text"
             sx={{ mt: 1 }}
-            onClick={() => alert("Forgot Password functionality not implemented yet.")}
+            onClick={() =>
+              alert("Forgot Password functionality not implemented yet.")
+            }
           >
             Forgot Password?
           </Button>
