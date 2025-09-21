@@ -15,35 +15,30 @@ import java.util.List;
 @Getter
 @Setter
 public class User implements UserDetails {
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-
     @Column(unique = true, nullable = false)
     private String username;
-
     @Column(unique = true, nullable = false)
     private String email;
-
-    @Column( nullable = false)
+    @Column(nullable = false)
     private String password;
 
     @Column(name = "verification_code")
     private String verificationCode;
-
     @Column(name = "verification_expiration")
     private LocalDateTime verificationCodeExpiresAt;
     private boolean enabled;
 
+    //constructor for creating an unverified user
     public User(String username, String email, String password) {
         this.username = username;
         this.email = email;
         this.password = password;
     }
-
-    public User() {
-
+    //default constructor
+    public User(){
     }
 
     @Override
@@ -51,18 +46,24 @@ public class User implements UserDetails {
         return List.of();
     }
 
-    @Override
-    public String getPassword() {
-        return "";
-    }
+//    TODO: add proper boolean checks
+//    @Override
+//    public boolean isAccountNonExpired() {
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean isAccountNonLocked() {
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean isCredentialsNonExpired() {
+//        return true;
+//    }
 
     @Override
-    public String getUsername() {
-        return "";
-    }
-
-    @Override
-    public boolean isEnabled(){
+    public boolean isEnabled() {
         return enabled;
     }
 }
