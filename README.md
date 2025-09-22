@@ -31,10 +31,10 @@ The platform features secure, role-based portals for both students and faculty, 
 
 ## Workflow Images
 
-![Workflow Diagram 1](https://placehold.co/600x400?text=Workflow+Diagram+1)  
+![Workflow Diagram 1](documents/OverallWorkflow.png)  
 *Figure 1: Overview of the grievance handling workflow*
 
-![Workflow Diagram 2](https://placehold.co/600x400?text=Workflow+Diagram+2)  
+![Workflow Diagram 2](documents/BackendWorkflow.png)  
 *Figure 2: Detailed architectural components and data flow*
 
 ---
