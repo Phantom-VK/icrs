@@ -7,6 +7,9 @@ import com.college.icrs.model.User;
 import com.college.icrs.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -32,9 +35,11 @@ public class AuthenticationService {
     }
 
     public User signup(RegisterUserDto input){
-//        System.out.println("+++++++++++++++++++++++++++++\n"+"Email: "+input.getEmail() +" Pass: "+ input.getPassword() +" Name: "+ input.getUsername()+"\n+++++++++++++++++++++++++++++");
+        if (userRepository.findByEmail(input.getEmail()).isPresent()) {
+            throw new RuntimeException("User with email " + input.getEmail() + " already exists.");
+        }
+
         User user = new User(input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()));
-//        System.out.println("+++++++++++++++++++++++++++++\n"+"Email: "+user.getEmail() +" Pass: "+ user.getPassword() +" Name: "+ user.getUsername()+"\n+++++++++++++++++++++++++++++");
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
         user.setEnabled(true);
@@ -42,6 +47,7 @@ public class AuthenticationService {
 
         return userRepository.save(user);
     }
+
 
     public User login(LoginUserDto input){
         User user = userRepository.findByEmail(input.getEmail())
@@ -129,6 +135,23 @@ public class AuthenticationService {
         Random random = new Random();
         int code = random.nextInt(900000) + 10000;
         return String.valueOf(code);
+    }
+
+    public User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetails) {
+            return (User) principal;
+        }
+
+        // If principal is a string (like "anonymousUser") or other, handle accordingly
+        return null;
     }
 
 }
