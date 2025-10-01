@@ -1,0 +1,113 @@
+.dashboard-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.logout-button {
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.dashboard-buttons {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.dashboard-button {
+  flex: 1;
+  background-color: #b2ebf2;
+  padding: 15px;
+  text-align: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dashboard-button:hover {
+  background-color: #81d4fa;
+}
+
+.dashboard-button .icon {
+  font-size: 25px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.dashboard-button .plus {
+  color: #03a9f4;
+}
+
+.dashboard-button .search {
+  color: green;
+}
+
+.overview-container {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.overview-box {
+  flex: 1;
+  background-color: #f5f5f5;
+  padding: 20px;
+  text-align: center;
+  border-radius: 6px;
+}
+
+.overview-box h4 {
+  margin-bottom: 10px;
+}
+
+.overview-box p {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.overview-box p.pending {
+  color: black;
+}
+
+.overview-box p.resolved {
+  color: green;
+}
+
+.overview-box p.rejected {
+  color: red;
+}
+
+.recent-grievances ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.recent-grievances li {
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+}
+.recent-grievances li {
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.recent-grievances li:hover {
+  background-color: #f0f0f0;
+}
+
+.grievance-details {
+  margin-top: 5px;
+  padding-left: 10px;
+  font-size: 0.9em;
+  color: #333;
+}
