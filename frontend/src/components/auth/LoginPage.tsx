@@ -3,7 +3,7 @@ import { TextField, Button, Card, CardContent, Typography, Box } from "@mui/mate
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import logo from "../../assets/logo.png";
-import authService from "../../services/authService"; // adjust path for dummy api
+import authService from "../../services/authService"; 
 
 
 const LoginPage: React.FC = () => {
@@ -67,7 +67,7 @@ const LoginPage: React.FC = () => {
           {/* Create Account */}
           <Button
             fullWidth
-            variant="contained"      // same style as Sign In
+            variant="contained"    
             sx={{ mt: 1, backgroundColor: "#0288d1", "&:hover": { backgroundColor: "#0277bd" } }}
             onClick={() => navigate("/auth/create-account")}
           >
