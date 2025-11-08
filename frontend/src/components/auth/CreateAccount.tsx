@@ -3,7 +3,6 @@ import { TextField, Button, Card, CardContent, Typography, Box, Link } from "@mu
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import logo from "../../assets/logo.png";
-import authService from "../../services/authService"; // adjust path for dummy api
 
 const CreateAccount: React.FC = () => {
   const navigate = useNavigate();
@@ -24,27 +23,46 @@ const CreateAccount: React.FC = () => {
 
   const handleCreateAccount = async () => {
     if (formData.password !== formData.confirmPassword) {
-      setMessage("Passwords do not match.");
+      setMessage("❌ Passwords do not match.");
       return;
     }
+
     setLoading(true);
+    setMessage("");
+
     try {
-      const res: any = await authService.register(
-        formData.fullname,
-        formData.studentId,
-        formData.department,
-        formData.email,
-        formData.password
+      // ✅ API request to real backend
+      const response = await axios.post(
+        "http://localhost:8080/api/auth/signup",
+        {
+          username: formData.fullname,
+          studentId: formData.studentId,
+          department: formData.department,
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
-      setMessage(res.message);
-      setTimeout(() => navigate(`/auth/verify?email=${formData.email}`), 1000);
-    } catch (err: any) {
-      setMessage(err.message || "Signup failed.");
+
+      if (response.status === 200) {
+        setMessage("✅ Account created successfully! Check your email for verification.");
+        // Redirect to verify page after short delay
+        setTimeout(() => navigate(`/auth/verify?email=${formData.email}`), 2000);
+      }
+    } catch (error: any) {
+      if (error.response) {
+        setMessage(`❌ ${error.response.data}`);
+      } else {
+        setMessage("❌ Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <Box
@@ -73,7 +91,7 @@ const CreateAccount: React.FC = () => {
           <TextField fullWidth label="Confirm Password" type="password" name="confirmPassword" margin="normal" value={formData.confirmPassword} onChange={handleChange} />
 
           <Button fullWidth variant="contained" sx={{ mt: 2 }} onClick={handleCreateAccount} disabled={loading}>
-            Create Account
+            {loading ? "Creating..." : "Create Account"}
           </Button>
 
           {message && (

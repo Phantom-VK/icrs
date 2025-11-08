@@ -3,12 +3,6 @@ import { TextField, Button, Card, CardContent, Typography, Box } from "@mui/mate
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import logo from "../../assets/logo.png";
-<<<<<<< HEAD
-import authService from "../../services/authService"; // adjust path for dummy api
-=======
-import authService from "../../services/authService"; 
->>>>>>> master
-
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,24 +13,41 @@ const LoginPage: React.FC = () => {
 
   const handleLogin = async () => {
     setLoading(true);
-    try {
-      const res: any = await authService.login(email, password);
+    setMessage("");
 
-      if (!res.verified) {
-        setMessage("Your account is not verified. Redirecting...");
-        setTimeout(() => navigate(`/auth/verify?email=${email}`), 1000);
+    try {
+      // 🔗 Call your Spring Boot API
+      const response = await axios.post("http://localhost:8080/auth/login", {
+        email,
+        password,
+      });
+
+      // 🧾 Backend returns token and expiry
+      const { token, expiresIn } = response.data;
+
+      if (!token) {
+        setMessage("Invalid login response from server.");
         return;
       }
 
-      localStorage.setItem("token", res.token);
-      navigate("/auth/student-dashboard");
-    } catch (err: any) {
-      setMessage(err.message || "Login failed.");
+      // 💾 Store JWT token locally for authenticated requests
+      localStorage.setItem("token", token);
+      localStorage.setItem("tokenExpiry", expiresIn);
+
+      setMessage("Login successful!");
+      setTimeout(() => navigate("/auth/student-dashboard"), 1000);
+    } catch (error: any) {
+      if (error.response && error.response.status === 403) {
+        setMessage("Access denied. Please verify your email first.");
+      } else if (error.response && error.response.status === 401) {
+        setMessage("Invalid email or password.");
+      } else {
+        setMessage("Login failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <Box
@@ -57,25 +68,44 @@ const LoginPage: React.FC = () => {
           </Typography>
         </Box>
         <CardContent>
-          <TextField fullWidth label="College Email" margin="normal" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <TextField fullWidth label="Password" type="password" margin="normal" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <TextField
+            fullWidth
+            label="College Email"
+            margin="normal"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <TextField
+            fullWidth
+            label="Password"
+            type="password"
+            margin="normal"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-          <Button fullWidth variant="contained" sx={{ mt: 2 }} onClick={handleLogin} disabled={loading}>
-            Sign In
+          <Button
+            fullWidth
+            variant="contained"
+            sx={{ mt: 2 }}
+            onClick={handleLogin}
+            disabled={loading}
+          >
+            {loading ? "Signing In..." : "Sign In"}
           </Button>
 
-          <Button fullWidth variant="text" sx={{ mt: 1 }} onClick={() => alert("Forgot Password functionality not implemented yet.")}>
+          <Button
+            fullWidth
+            variant="text"
+            sx={{ mt: 1 }}
+            onClick={() => alert("Forgot Password functionality not implemented yet.")}
+          >
             Forgot Password?
           </Button>
 
-          {/* Create Account */}
           <Button
             fullWidth
-<<<<<<< HEAD
-            variant="contained"      // same style as Sign In
-=======
-            variant="contained"    
->>>>>>> master
+            variant="contained"
             sx={{ mt: 1, backgroundColor: "#0288d1", "&:hover": { backgroundColor: "#0277bd" } }}
             onClick={() => navigate("/auth/create-account")}
           >
@@ -83,7 +113,7 @@ const LoginPage: React.FC = () => {
           </Button>
 
           {message && (
-            <Typography color="error" textAlign="center" sx={{ mt: 2 }}>
+            <Typography color={message.includes("successful") ? "primary" : "error"} textAlign="center" sx={{ mt: 2 }}>
               {message}
             </Typography>
           )}

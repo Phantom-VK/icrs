@@ -1,6 +1,5 @@
 package com.college.icrs.controller;
 
-
 import com.college.icrs.model.User;
 import com.college.icrs.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -23,14 +22,15 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> authenticatedUser(){
+    public ResponseEntity<User> authenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User currentUser = (User) authentication.getPrincipal();
+        String email = authentication.getName(); // Extract email from JWT
+        User currentUser = userService.findByEmail(email); // Fetch full user info from DB
         return ResponseEntity.ok(currentUser);
     }
 
     @GetMapping("/")
-    public ResponseEntity<List<User>> allUsers(){
+    public ResponseEntity<List<User>> allUsers() {
         List<User> users = userService.allUsers();
         return ResponseEntity.ok(users);
     }
