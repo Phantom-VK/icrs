@@ -168,4 +168,5 @@ public class GrievanceController {
         Map<String, Long> stats = grievanceService.getGrievanceStatistics();
         return ResponseEntity.ok(stats);
     }
+
 }
