@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(
                         authorize -> authorize
-                                .requestMatchers("/auth/**")
+                                .requestMatchers("/auth/**", "/grievances/**")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated()
