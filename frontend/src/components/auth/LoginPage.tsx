@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { TextField, Button, Card, CardContent, Typography, Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import logo from "../../assets/logo.png";
+import authService from "../../services/authService";
+import axios from "axios";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,38 +17,32 @@ const LoginPage: React.FC = () => {
     setMessage("");
 
     try {
-      // 🔗 Call your Spring Boot API
-      const response = await axios.post("http://localhost:8080/auth/login", {
-        email,
-        password,
-      });
+      const result = await authService.login(email, password);
 
-      // 🧾 Backend returns token and expiry
-      const { token, expiresIn } = response.data;
+      console.log("🔹 Login result:", result); // Should log { token, expiresIn }
 
-      if (!token) {
-        setMessage("Invalid login response from server.");
-        return;
-      }
+      if (result?.token) {
+        setMessage("✅ Login successful!");
 
-      // 💾 Store JWT token locally for authenticated requests
-      localStorage.setItem("token", token);
-      localStorage.setItem("tokenExpiry", expiresIn);
+        // optional: store a flag for quick check
+        localStorage.setItem("isLoggedIn", "true");
 
-      setMessage("Login successful!");
-      setTimeout(() => navigate("/auth/student-dashboard"), 1000);
-    } catch (error: any) {
-      if (error.response && error.response.status === 403) {
-        setMessage("Access denied. Please verify your email first.");
-      } else if (error.response && error.response.status === 401) {
-        setMessage("Invalid email or password.");
+        setTimeout(() => navigate("/auth/student-dashboard"), 800);
       } else {
-        setMessage("Login failed. Please try again.");
+        setMessage("❌ Invalid response from server.");
+      }
+    } catch (error: unknown) {
+      console.error("Login error:", error);
+      if (error instanceof Error) {
+        setMessage(error.message);
+      } else {
+        setMessage("❌ Login failed. Please try again.");
       }
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <Box
@@ -106,14 +101,22 @@ const LoginPage: React.FC = () => {
           <Button
             fullWidth
             variant="contained"
-            sx={{ mt: 1, backgroundColor: "#0288d1", "&:hover": { backgroundColor: "#0277bd" } }}
+            sx={{
+              mt: 1,
+              backgroundColor: "#0288d1",
+              "&:hover": { backgroundColor: "#0277bd" },
+            }}
             onClick={() => navigate("/auth/create-account")}
           >
             Create Account
           </Button>
 
           {message && (
-            <Typography color={message.includes("successful") ? "primary" : "error"} textAlign="center" sx={{ mt: 2 }}>
+            <Typography
+              color={message.includes("✅") ? "primary" : "error"}
+              textAlign="center"
+              sx={{ mt: 2 }}
+            >
               {message}
             </Typography>
           )}

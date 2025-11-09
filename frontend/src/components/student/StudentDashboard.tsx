@@ -4,14 +4,14 @@ import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import logo from "../../assets/logo.png";
 import authService from "../../services/authService";
-import api from "../../services/axiosConfig";
+import grievanceService from "../../services/grievanceService";
 
 interface Grievance {
   id: number;
   title: string;
   description: string;
   category: string;
-  status: "Pending" | "Resolved" | "Rejected";
+  status: "SUBMITTED" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
 }
 
 const StudentDashboard: React.FC = () => {
@@ -20,40 +20,56 @@ const StudentDashboard: React.FC = () => {
   const [grievances, setGrievances] = useState<Grievance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [userEmail, setUserEmail] = useState("");
+  const [user, setUser] = useState<{ email: string } | null>(null);
 
-  // Fetch user and grievances
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const user = await authService.getCurrentUser();
-        setUserEmail(user.email);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("⚠️ No token found — redirecting to login");
+        navigate("/auth/login");
+        return;
+      }
 
-        // Fetch grievances filtered by user’s email
-        const res = await api.get(`/grievances/byEmail?email=${user.email}`);
-        setGrievances(res.data || []);
+      try {
+        // ✅ 1. Fetch logged-in user info
+        const currentUser = await authService.getCurrentUser();
+        if (!currentUser?.email) {
+          console.error("❌ Invalid user session:", currentUser);
+          throw new Error("Invalid or expired user session.");
+        }
+
+        console.log("✅ Logged in as:", currentUser.email);
+        setUser(currentUser);
+
+        // ✅ 2. Fetch grievances via JWT-based route
+        const grievancesData = await grievanceService.getMyGrievances();
+        console.log(`✅ Loaded ${grievancesData.length} grievances.`);
+        setGrievances(grievancesData || []);
       } catch (err: any) {
-        console.error(err);
-        setError("Failed to load grievances. Please try again.");
+        console.error("❌ Error loading dashboard data:", err);
+        setError("Failed to load grievances. Please try again later.");
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
 
-  const toggleExpand = (id: number) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
+    // Delay to ensure Axios interceptor applies token properly
+    setTimeout(fetchData, 250);
+  }, [navigate]);
 
   const handleLogout = () => {
     authService.logout();
     navigate("/auth/login");
   };
 
-  const pendingCount = grievances.filter((g) => g.status === "Pending").length;
-  const resolvedCount = grievances.filter((g) => g.status === "Resolved").length;
-  const rejectedCount = grievances.filter((g) => g.status === "Rejected").length;
+  const toggleExpand = (id: number) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
+  const pendingCount = grievances.filter((g) => g.status === "SUBMITTED").length;
+  const resolvedCount = grievances.filter((g) => g.status === "RESOLVED").length;
+  const rejectedCount = grievances.filter((g) => g.status === "REJECTED").length;
 
   return (
     <div
@@ -102,7 +118,7 @@ const StudentDashboard: React.FC = () => {
         <div style={{ textAlign: "center", marginBottom: "30px" }}>
           <img src={logo} alt="College Logo" style={{ width: "700px", marginBottom: "10px" }} />
           <h2 style={{ color: "#000" }}>SGGS COLLEGE REDRESSAL SYSTEM</h2>
-          {userEmail && <p>Welcome, {userEmail}</p>}
+          {user && <p>Welcome, {user.email}</p>}
         </div>
 
         {/* Submit / Track Buttons */}
@@ -152,7 +168,7 @@ const StudentDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Grievance Overview */}
+        {/* Overview Cards */}
         <div style={{ display: "flex", gap: "10px", marginBottom: "30px" }}>
           <OverviewCard label="Pending" count={pendingCount} color="black" />
           <OverviewCard label="Resolved" count={resolvedCount} color="green" />
@@ -183,9 +199,19 @@ const StudentDashboard: React.FC = () => {
                 >
                   <strong>{g.title}</strong> - Status: {g.status}
                   {expandedId === g.id && (
-                    <div style={{ marginTop: "5px", fontSize: "0.9em", paddingLeft: "10px" }}>
-                      <p><strong>Category:</strong> {g.category}</p>
-                      <p><strong>Description:</strong> {g.description}</p>
+                    <div
+                      style={{
+                        marginTop: "5px",
+                        fontSize: "0.9em",
+                        paddingLeft: "10px",
+                      }}
+                    >
+                      <p>
+                        <strong>Category:</strong> {g.category}
+                      </p>
+                      <p>
+                        <strong>Description:</strong> {g.description}
+                      </p>
                     </div>
                   )}
                 </li>
@@ -198,8 +224,15 @@ const StudentDashboard: React.FC = () => {
   );
 };
 
-// Subcomponent for overview counters
-const OverviewCard = ({ label, count, color }: { label: string; count: number; color: string }) => (
+const OverviewCard = ({
+  label,
+  count,
+  color,
+}: {
+  label: string;
+  count: number;
+  color: string;
+}) => (
   <div
     style={{
       flex: 1,
@@ -210,7 +243,16 @@ const OverviewCard = ({ label, count, color }: { label: string; count: number; c
     }}
   >
     <h4 style={{ color: "#000" }}>{label}</h4>
-    <p style={{ fontSize: "20px", fontWeight: "bold", color, margin: 0 }}>{count}</p>
+    <p
+      style={{
+        fontSize: "20px",
+        fontWeight: "bold",
+        color,
+        margin: 0,
+      }}
+    >
+      {count}
+    </p>
   </div>
 );
 

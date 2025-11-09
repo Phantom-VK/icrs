@@ -1,8 +1,15 @@
-import api from "./axiosConfig";
+// src/services/authService.ts
+import api from "./apiClient";
 
 const authService = {
-  // Signup / Register
-  register: async (fullname: string, studentId: string, department: string, email: string, password: string) => {
+  // ✅ Signup / Register
+  register: async (
+    fullname: string,
+    studentId: string,
+    department: string,
+    email: string,
+    password: string
+  ) => {
     const payload = {
       username: fullname,
       email,
@@ -10,25 +17,32 @@ const authService = {
       studentId,
       department,
     };
+
     const response = await api.post("/auth/signup", payload);
     return response.data;
   },
 
-  // Login
+  // ✅ Login (returns and stores token + expiry)
   login: async (email: string, password: string) => {
     const payload = { email, password };
     const response = await api.post("/auth/login", payload);
 
-    if (response.data?.token) {
-      localStorage.setItem("token", response.data.token);
-    }
+    const { token, expiresIn } = response.data || {};
+
+    if (!token) throw new Error("Invalid login response from server.");
+
+    // Store token + expiry in localStorage
+    localStorage.setItem("token", token);
+    localStorage.setItem("tokenExpiry", String(expiresIn));
+
+    console.log("🔹 Token stored successfully");
+
     return response.data;
   },
 
-  // ✅ Verify account
+  // ✅ Verify user email
   verify: async (email: string, verificationCode: string) => {
-    const payload = { email, verificationCode };
-    const response = await api.post("/auth/verify", payload);
+    const response = await api.post("/auth/verify", { email, verificationCode });
     return { message: response.data || "Account verified successfully." };
   },
 
@@ -38,15 +52,23 @@ const authService = {
     return { message: response.data || "Verification code resent successfully." };
   },
 
-  // Get logged-in user
+  // ✅ Get currently logged-in user
   getCurrentUser: async () => {
-    const response = await api.get("/users/me");
-    return response.data;
+    try {
+      const response = await api.get("/users/me");
+      console.log("✅ /users/me response:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Failed to fetch current user:", error.response?.status || error.message);
+      throw error;
+    }
   },
 
-  // Logout
+  // ✅ Logout
   logout: () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("tokenExpiry");
+    console.log("🔹 Logged out and cleared token");
   },
 };
 

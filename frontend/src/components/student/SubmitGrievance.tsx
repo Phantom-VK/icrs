@@ -11,21 +11,83 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
+import grievanceService from "../../services/grievanceService";
+import authService from "../../services/authService";
 
 const categories = ["Academic", "Administrative", "Facilities", "Other"];
 const subCategories = ["Issue 1", "Issue 2", "Issue 3", "Other"];
 
 const SubmitGrievance: React.FC = () => {
-  const navigate = useNavigate(); // Added for navigation
+  const navigate = useNavigate();
   const [category, setCategory] = useState("");
   const [subCategory, setSubCategory] = useState("");
   const [description, setDescription] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
-    // simulate submission
-    setSubmitted(true);
+  const handleSubmit = async () => {
+    setError(null);
+    setSubmitted(false);
+
+    if (!category || !description || !registrationNumber) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      let user = null;
+      try {
+        user = await authService.getCurrentUser();
+        console.log("✅ Logged-in user:", user?.email || "Unknown user");
+      } catch {
+        console.warn("⚠️ Could not fetch user info, proceeding anyway.");
+      }
+
+      const title = `${category}${subCategory ? ` - ${subCategory}` : ""}`;
+      const payload = {
+        title,
+        category,
+        subcategory: subCategory,
+        description,
+        registrationNumber,
+      };
+
+      console.log("📤 Submitting grievance payload:", payload);
+
+      // ✅ Ensures this calls only `/api/grievances` (not /api/api/grievances)
+      const response = await grievanceService.submit(payload);
+      console.log("✅ Backend response:", response);
+
+      setSubmitted(true);
+      setCategory("");
+      setSubCategory("");
+      setDescription("");
+      setRegistrationNumber("");
+
+      // ✅ Redirect after short delay
+      setTimeout(() => navigate("/auth/student-dashboard"), 2000);
+    } catch (err: any) {
+      console.error("❌ Submission failed:", err);
+
+      // ✅ Safe error extraction to prevent React crashes
+      if (err?.response) {
+        const res = err.response;
+        const message =
+          typeof res.data === "string"
+            ? res.data
+            : res.data?.message ||
+              res.data?.error ||
+              "Server returned an error.";
+        setError(message);
+      } else {
+        setError("Failed to submit grievance. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,8 +102,8 @@ const SubmitGrievance: React.FC = () => {
         alignItems: "center",
       }}
     >
-      <Card sx={{ maxWidth: 700, width: "100%", p: 3, position: "relative" }}>
-        {/* Back to Portal button */}
+      <Card sx={{ maxWidth: 700, width: "100%", p: 3 }}>
+        {/* Back Button */}
         <Button
           variant="outlined"
           sx={{ mb: 2 }}
@@ -50,19 +112,31 @@ const SubmitGrievance: React.FC = () => {
           &larr; Back to Portal
         </Button>
 
+        {/* Header */}
         <Box textAlign="center" mb={2}>
-          <img src={logo} alt="College Logo" style={{ width: "600px", height: "auto" }} />
+          <img
+            src={logo}
+            alt="College Logo"
+            style={{ width: "600px", height: "auto" }}
+          />
           <Typography variant="h6" fontWeight="bold">
             SGGS COLLEGE REDRESSAL SYSTEM
           </Typography>
         </Box>
 
+        {/* Alerts */}
         {submitted && (
           <Alert severity="success" sx={{ mb: 2 }}>
-            Your grievance has been submitted successfully!
+            ✅ Grievance submitted successfully! Redirecting...
+          </Alert>
+        )}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {typeof error === "string" ? error : "An unknown error occurred."}
           </Alert>
         )}
 
+        {/* Form */}
         <CardContent>
           <TextField
             select
@@ -117,8 +191,9 @@ const SubmitGrievance: React.FC = () => {
             variant="contained"
             sx={{ mt: 2 }}
             onClick={handleSubmit}
+            disabled={loading}
           >
-            Submit Grievance
+            {loading ? "Submitting..." : "Submit Grievance"}
           </Button>
         </CardContent>
       </Card>

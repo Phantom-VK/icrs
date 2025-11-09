@@ -3,11 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 
 import LoginPage from "./components/auth/LoginPage";
 import CreateAccount from "./components/auth/CreateAccount";
+import VerifyAccount from "./components/auth/VerifyAccount";
+
 import StudentDashboard from "./components/student/StudentDashboard";
 import SubmitGrievance from "./components/student/SubmitGrievance";
 import TrackGrievance from "./components/student/TrackGrievance";
+
 import FacultyDashboard from "./components/faculty/FacultyDashboard";
-import VerifyAccount from "./components/auth/VerifyAccount";
+import ProtectedRoute from "./components/ProtectedRoute"; // ✅ make sure this path is correct
 
 function App() {
   return (
@@ -16,19 +19,46 @@ function App() {
         {/* Default redirect to login */}
         <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
-        {/* Authentication */}
+        {/* Public routes */}
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/create-account" element={<CreateAccount />} />
         <Route path="/auth/verify" element={<VerifyAccount />} />
- 
 
-        {/* Student Pages */}
-        <Route path="/auth/student-dashboard" element={<StudentDashboard />} />
-        <Route path="/student/submit-grievance" element={<SubmitGrievance />} />
-        <Route path="/student/track-grievance" element={<TrackGrievance />} />
+        {/* ✅ Protected Student Routes */}
+        <Route
+          path="/auth/student-dashboard"
+          element={
+            <ProtectedRoute>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/submit-grievance"
+          element={
+            <ProtectedRoute>
+              <SubmitGrievance />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/track-grievance"
+          element={
+            <ProtectedRoute>
+              <TrackGrievance />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Faculty Pages */}
-        <Route path="/faculty/dashboard" element={<FacultyDashboard />} />
+        {/* ✅ Protected Faculty Route */}
+        <Route
+          path="/faculty/dashboard"
+          element={
+            <ProtectedRoute>
+              <FacultyDashboard />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/auth/login" replace />} />

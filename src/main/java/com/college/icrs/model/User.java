@@ -1,6 +1,5 @@
 package com.college.icrs.model;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -25,20 +24,25 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+
     @Column(name = "verification_code")
     private String verificationCode;
     @Column(name = "verification_expiration")
     private LocalDateTime verificationCodeExpiresAt;
     private boolean enabled;
 
-    //constructor for creating an unverified user
+    // constructor for creating an unverified user
     public User(String username, String email, String password) {
         this.username = username;
         this.email = email;
         this.password = password;
     }
-    //default constructor
-    public User(){
+
+    // default constructor
+    public User() {
     }
 
     @Override
@@ -46,21 +50,21 @@ public class User implements UserDetails {
         return List.of();
     }
 
-//    TODO: add proper boolean checks
-//    @Override
-//    public boolean isAccountNonExpired() {
-//        return true;
-//    }
-//
-//    @Override
-//    public boolean isAccountNonLocked() {
-//        return true;
-//    }
-//
-//    @Override
-//    public boolean isCredentialsNonExpired() {
-//        return true;
-//    }
+    // TODO: add proper boolean checks
+    // @Override
+    // public boolean isAccountNonExpired() {
+    // return true;
+    // }
+    //
+    // @Override
+    // public boolean isAccountNonLocked() {
+    // return true;
+    // }
+    //
+    // @Override
+    // public boolean isCredentialsNonExpired() {
+    // return true;
+    // }
 
     @Override
     public boolean isEnabled() {

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, type ChangeEvent } from "react";
 import { TextField, Button, Card, CardContent, Typography, Box, Link } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import logo from "../../assets/logo.png";
+import authService from "../../services/authService";
+import axios from "axios";
 
 const CreateAccount: React.FC = () => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const CreateAccount: React.FC = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -31,33 +32,25 @@ const CreateAccount: React.FC = () => {
     setMessage("");
 
     try {
-      // ✅ API request to real backend
-      const response = await axios.post(
-        "http://localhost:8080/api/auth/signup",
-        {
-          username: formData.fullname,
-          studentId: formData.studentId,
-          department: formData.department,
-          email: formData.email,
-          password: formData.password,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      await authService.register(
+        formData.fullname,
+        formData.studentId,
+        formData.department,
+        formData.email,
+        formData.password
       );
 
-      if (response.status === 200) {
-        setMessage("✅ Account created successfully! Check your email for verification.");
-        // Redirect to verify page after short delay
-        setTimeout(() => navigate(`/auth/verify?email=${formData.email}`), 2000);
-      }
-    } catch (error: any) {
-      if (error.response) {
-        setMessage(`❌ ${error.response.data}`);
+      setMessage("✅ Account created successfully! Check your email for verification.");
+      setTimeout(() => navigate(`/auth/verify?email=${formData.email}`), 2000);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          setMessage(`❌ ${error.response.data}`);
+        } else {
+          setMessage("❌ Network error. Please try again.");
+        }
       } else {
-        setMessage("❌ Something went wrong. Please try again.");
+        setMessage("❌ Unexpected error occurred.");
       }
     } finally {
       setLoading(false);
@@ -95,7 +88,11 @@ const CreateAccount: React.FC = () => {
           </Button>
 
           {message && (
-            <Typography color="error" textAlign="center" sx={{ mt: 2 }}>
+            <Typography
+              color={message.includes("✅") ? "primary" : "error"}
+              textAlign="center"
+              sx={{ mt: 2 }}
+            >
               {message}
             </Typography>
           )}
