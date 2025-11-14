@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Grievance{
+public class Grievance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,8 +33,8 @@ public class Grievance{
     private String category;
     private String subcategory;
 
-    @Enumerated(EnumType.STRING)
-    private Priority priority;
+    @Column(name = "registration_number")
+    private String registrationNumber;
 
     @ManyToOne
     @JoinColumn(name = "assigned_to")
@@ -47,6 +47,6 @@ public class Grievance{
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    private  LocalDateTime updatedAt;
+    private LocalDateTime updatedAt;
 
 }

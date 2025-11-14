@@ -1,39 +1,62 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import grievanceService from "../../services/grievanceService";
 
 interface Grievance {
   id: number;
   title: string;
   description: string;
   category: string;
-  status: "Pending" | "Resolved" | "Rejected";
+  subcategory: string;
+  registrationNumber: string;
+  status: "SUBMITTED" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
 }
-
-const dummyGrievances: Grievance[] = [
-  { id: 1, title: "Library Issue", description: "Noise in library", category: "Facilities", status: "Pending" },
-  { id: 2, title: "Hostel Issue", description: "Leaking tap", category: "Facilities", status: "Resolved" },
-  { id: 3, title: "Exam Issue", description: "Incorrect marks", category: "Academic", status: "Rejected" },
-];
 
 const TrackGrievance: React.FC = () => {
   const navigate = useNavigate();
+  const [grievances, setGrievances] = useState<Grievance[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [filterStatus, setFilterStatus] = useState<"All" | "Pending" | "Resolved" | "Rejected">("All");
+  const [filterStatus, setFilterStatus] = useState<
+    "All" | "SUBMITTED" | "IN_PROGRESS" | "RESOLVED" | "REJECTED"
+  >("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filteredGrievances = dummyGrievances.filter((g) => {
+  // ✅ Fetch grievances directly via JWT
+  useEffect(() => {
+    const fetchGrievances = async () => {
+      try {
+        console.log("📥 Fetching grievances for logged-in student...");
+        const data = await grievanceService.getMyGrievances();
+        setGrievances(data || []);
+        console.log("✅ Fetched grievances:", data);
+      } catch (err) {
+        console.error("❌ Failed to load grievances:", err);
+        setError("Failed to load grievances. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGrievances();
+  }, []);
+
+  // ✅ Filter logic
+  const filteredGrievances = grievances.filter((g) => {
     const matchesSearch =
       g.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       g.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      g.category.toLowerCase().includes(searchTerm.toLowerCase());
+      g.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      g.registrationNumber.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "All" || g.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
   const statusColors: Record<string, string> = {
-    Pending: "black",
-    Resolved: "green",
-    Rejected: "red",
+    SUBMITTED: "black",
+    IN_PROGRESS: "#007bff",
+    RESOLVED: "green",
+    REJECTED: "red",
   };
 
   return (
@@ -77,7 +100,9 @@ const TrackGrievance: React.FC = () => {
         </button>
 
         {/* Header */}
-        <h2 style={{ textAlign: "center", marginBottom: "20px" }}>Track Your Grievances</h2>
+        <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
+          Track Your Grievances
+        </h2>
 
         {/* Search Bar */}
         <div style={{ marginBottom: "20px", textAlign: "center" }}>
@@ -98,32 +123,46 @@ const TrackGrievance: React.FC = () => {
         </div>
 
         {/* Status Filter Tabs */}
-        <div style={{ display: "flex", justifyContent: "center", gap: "15px", marginBottom: "20px" }}>
-          {["All", "Pending", "Resolved", "Rejected"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status as any)}
-              style={{
-                padding: "10px 20px",
-                borderRadius: "6px",
-                border: "none",
-                cursor: "pointer",
-                fontWeight: filterStatus === status ? "bold" : "normal",
-                backgroundColor: filterStatus === status ? "#81d4fa" : "#f5f5f5",
-                color: "#000",
-              }}
-            >
-              {status}
-            </button>
-          ))}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: "15px",
+            marginBottom: "20px",
+          }}
+        >
+          {["All", "SUBMITTED", "IN_PROGRESS", "RESOLVED", "REJECTED"].map(
+            (status) => (
+              <button
+                key={status}
+                onClick={() => setFilterStatus(status as any)}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: filterStatus === status ? "bold" : "normal",
+                  backgroundColor:
+                    filterStatus === status ? "#81d4fa" : "#f5f5f5",
+                  color: "#000",
+                }}
+              >
+                {status.replace("_", " ")}
+              </button>
+            )
+          )}
         </div>
 
-        {/* Grievance List */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-          {filteredGrievances.length === 0 ? (
-            <p style={{ textAlign: "center" }}>No grievances found.</p>
-          ) : (
-            filteredGrievances.map((g) => (
+        {/* Content */}
+        {loading ? (
+          <p style={{ textAlign: "center" }}>Loading grievances...</p>
+        ) : error ? (
+          <p style={{ textAlign: "center", color: "red" }}>{error}</p>
+        ) : filteredGrievances.length === 0 ? (
+          <p style={{ textAlign: "center" }}>No grievances found.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+            {filteredGrievances.map((g) => (
               <div
                 key={g.id}
                 onClick={() => setExpandedId(expandedId === g.id ? null : g.id)}
@@ -137,20 +176,47 @@ const TrackGrievance: React.FC = () => {
                   gap: "5px",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <strong>{g.title}</strong>
-                  <span style={{ color: statusColors[g.status] }}>{g.status}</span>
+                  <span style={{ color: statusColors[g.status] }}>
+                    {g.status.replace("_", " ")}
+                  </span>
                 </div>
+
                 {expandedId === g.id && (
-                  <div style={{ marginTop: "10px", fontSize: "0.9em", color: "#000", lineHeight: "1.4em" }}>
-                    <p><strong>Category:</strong> {g.category}</p>
-                    <p><strong>Description:</strong> {g.description}</p>
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      fontSize: "0.9em",
+                      color: "#000",
+                      lineHeight: "1.4em",
+                    }}
+                  >
+                    <p>
+                      <strong>Registration Number:</strong>{" "}
+                      {g.registrationNumber}
+                    </p>
+                    <p>
+                      <strong>Category:</strong> {g.category}
+                    </p>
+                    <p>
+                      <strong>Subcategory:</strong> {g.subcategory}
+                    </p>
+                    <p>
+                      <strong>Description:</strong> {g.description}
+                    </p>
                   </div>
                 )}
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

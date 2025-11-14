@@ -21,4 +21,6 @@ public class GrievanceRequestDTO {
     @NotBlank(message = "Sub-Category is required")
     private String subcategory;
 
+    private String registrationNumber;
+
 }

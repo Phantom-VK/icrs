@@ -1,6 +1,5 @@
 package com.college.icrs.dto;
 
-import com.college.icrs.model.Priority;
 import com.college.icrs.model.Status;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,7 +15,7 @@ public class GrievanceResponseDTO {
     private  String description;
     private  String category;
     private  String subcategory;
-    private Priority priority;
+    private String registrationNumber;
     private Status status;
     private String studentName;
     private String assignedToName;

@@ -1,34 +1,75 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
 import logo from "../../assets/logo.png";
+import authService from "../../services/authService";
+import grievanceService from "../../services/grievanceService";
 
 interface Grievance {
   id: number;
   title: string;
   description: string;
   category: string;
-  status: "Pending" | "Resolved" | "Rejected";
+  status: "SUBMITTED" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
 }
-
-const dummyGrievances: Grievance[] = [
-  { id: 1, title: "Library Issue", description: "Noise in library", category: "Facilities", status: "Pending" },
-  { id: 2, title: "Hostel Issue", description: "Leaking tap", category: "Facilities", status: "Resolved" },
-  { id: 3, title: "Exam Issue", description: "Incorrect marks", category: "Academic", status: "Rejected" },
-];
 
 const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [grievances, setGrievances] = useState<Grievance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [user, setUser] = useState<{ email: string } | null>(null);
 
-  const pendingCount = dummyGrievances.filter((g) => g.status === "Pending").length;
-  const resolvedCount = dummyGrievances.filter((g) => g.status === "Resolved").length;
-  const rejectedCount = dummyGrievances.filter((g) => g.status === "Rejected").length;
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("⚠️ No token found — redirecting to login");
+        navigate("/auth/login");
+        return;
+      }
+
+      try {
+        // ✅ 1. Fetch logged-in user info
+        const currentUser = await authService.getCurrentUser();
+        if (!currentUser?.email) {
+          console.error("❌ Invalid user session:", currentUser);
+          throw new Error("Invalid or expired user session.");
+        }
+
+        console.log("✅ Logged in as:", currentUser.email);
+        setUser(currentUser);
+
+        // ✅ 2. Fetch grievances via JWT-based route
+        const grievancesData = await grievanceService.getMyGrievances();
+        console.log(`✅ Loaded ${grievancesData.length} grievances.`);
+        setGrievances(grievancesData || []);
+      } catch (err: any) {
+        console.error("❌ Error loading dashboard data:", err);
+        setError("Failed to load grievances. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Delay to ensure Axios interceptor applies token properly
+    setTimeout(fetchData, 250);
+  }, [navigate]);
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate("/auth/login");
+  };
 
   const toggleExpand = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
   };
+
+  const pendingCount = grievances.filter((g) => g.status === "SUBMITTED").length;
+  const resolvedCount = grievances.filter((g) => g.status === "RESOLVED").length;
+  const rejectedCount = grievances.filter((g) => g.status === "REJECTED").length;
 
   return (
     <div
@@ -57,14 +98,17 @@ const StudentDashboard: React.FC = () => {
       >
         {/* Logout Button */}
         <button
-          onClick={() => navigate("/auth/login")}
+          onClick={handleLogout}
           style={{
             position: "absolute",
             top: "20px",
             right: "20px",
             padding: "6px 14px",
             cursor: "pointer",
-            color: "#ffffffff",
+            backgroundColor: "#0288d1",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
           }}
         >
           Logout
@@ -74,6 +118,7 @@ const StudentDashboard: React.FC = () => {
         <div style={{ textAlign: "center", marginBottom: "30px" }}>
           <img src={logo} alt="College Logo" style={{ width: "700px", marginBottom: "10px" }} />
           <h2 style={{ color: "#000" }}>SGGS COLLEGE REDRESSAL SYSTEM</h2>
+          {user && <p>Welcome, {user.email}</p>}
         </div>
 
         {/* Submit / Track Buttons */}
@@ -95,7 +140,7 @@ const StudentDashboard: React.FC = () => {
             <div style={{ textAlign: "left" }}>
               <h3 style={{ margin: "0 0 5px 0" }}>Submit Grievance</h3>
               <p style={{ fontSize: "0.8em", margin: 0 }}>
-                Report an Issue of concern that needs attention.
+                Report an issue of concern that needs attention.
               </p>
             </div>
           </div>
@@ -117,81 +162,98 @@ const StudentDashboard: React.FC = () => {
             <div style={{ textAlign: "left" }}>
               <h3 style={{ margin: "0 0 5px 0" }}>Track Grievance</h3>
               <p style={{ fontSize: "0.8em", margin: 0 }}>
-                View the status and Progress of your submitted grievances.
+                View the status and progress of your submitted grievances.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Grievance Overview */}
+        {/* Overview Cards */}
         <div style={{ display: "flex", gap: "10px", marginBottom: "30px" }}>
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "#f5f5f5",
-              padding: "15px",
-              borderRadius: "6px",
-              textAlign: "center",
-            }}
-          >
-            <h4 style={{ color: "#000" }}>Pending</h4>
-            <p style={{ fontSize: "20px", fontWeight: "bold", color: "black", margin: 0 }}>{pendingCount}</p>
-          </div>
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "#f5f5f5",
-              padding: "15px",
-              borderRadius: "6px",
-              textAlign: "center",
-            }}
-          >
-            <h4 style={{ color: "#000" }}>Resolved</h4>
-            <p style={{ fontSize: "20px", fontWeight: "bold", color: "green", margin: 0 }}>{resolvedCount}</p>
-          </div>
-          <div
-            style={{
-              flex: 1,
-              backgroundColor: "#f5f5f5",
-              padding: "15px",
-              borderRadius: "6px",
-              textAlign: "center",
-            }}
-          >
-            <h4 style={{ color: "#000" }}>Rejected</h4>
-            <p style={{ fontSize: "20px", fontWeight: "bold", color: "red", margin: 0 }}>{rejectedCount}</p>
-          </div>
+          <OverviewCard label="Pending" count={pendingCount} color="black" />
+          <OverviewCard label="Resolved" count={resolvedCount} color="green" />
+          <OverviewCard label="Rejected" count={rejectedCount} color="red" />
         </div>
 
         {/* Recent Grievances */}
         <div>
           <h4 style={{ color: "#000" }}>Recent Grievances</h4>
-          <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-            {dummyGrievances.map((g) => (
-              <li
-                key={g.id}
-                onClick={() => setExpandedId(expandedId === g.id ? null : g.id)}
-                style={{
-                  padding: "15px 0",
-                  borderBottom: "1px solid #ddd",
-                  cursor: "pointer",
-                  color: "#000",
-                }}
-              >
-                <strong>{g.title}</strong> - Status: {g.status}
-                {expandedId === g.id && (
-                  <div style={{ marginTop: "5px", fontSize: "0.9em", color: "#000", paddingLeft: "10px" }}>
-                    <p><strong>Category:</strong> {g.category}</p>
-                    <p><strong>Description:</strong> {g.description}</p>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
+          {loading ? (
+            <p>Loading grievances...</p>
+          ) : error ? (
+            <p style={{ color: "red" }}>{error}</p>
+          ) : grievances.length === 0 ? (
+            <p>No grievances found.</p>
+          ) : (
+            <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+              {grievances.map((g) => (
+                <li
+                  key={g.id}
+                  onClick={() => toggleExpand(g.id)}
+                  style={{
+                    padding: "15px 0",
+                    borderBottom: "1px solid #ddd",
+                    cursor: "pointer",
+                    color: "#000",
+                  }}
+                >
+                  <strong>{g.title}</strong> - Status: {g.status}
+                  {expandedId === g.id && (
+                    <div
+                      style={{
+                        marginTop: "5px",
+                        fontSize: "0.9em",
+                        paddingLeft: "10px",
+                      }}
+                    >
+                      <p>
+                        <strong>Category:</strong> {g.category}
+                      </p>
+                      <p>
+                        <strong>Description:</strong> {g.description}
+                      </p>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
+const OverviewCard = ({
+  label,
+  count,
+  color,
+}: {
+  label: string;
+  count: number;
+  color: string;
+}) => (
+  <div
+    style={{
+      flex: 1,
+      backgroundColor: "#f5f5f5",
+      padding: "15px",
+      borderRadius: "6px",
+      textAlign: "center",
+    }}
+  >
+    <h4 style={{ color: "#000" }}>{label}</h4>
+    <p
+      style={{
+        fontSize: "20px",
+        fontWeight: "bold",
+        color,
+        margin: 0,
+      }}
+    >
+      {count}
+    </p>
+  </div>
+);
 
 export default StudentDashboard;

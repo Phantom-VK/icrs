@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -8,111 +8,123 @@ import {
   MenuItem,
   Button,
   Collapse,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import logo from "../../assets/logo.png";
 import { useNavigate } from "react-router-dom";
+import grievanceService from "../../services/grievanceService";
+import authService from "../../services/authService";
 
 interface Grievance {
   id: number;
   title: string;
-  studentId: string;
-  category: string;
   description: string;
-  status: "Pending" | "Resolved" | "Rejected";
+  category: string;
+  subcategory: string;
+  registrationNumber: string;
+  status: "SUBMITTED" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
 }
-
-const dummyGrievances: Grievance[] = [
-  {
-    id: 1,
-    title: "Library Noise",
-    studentId: "S12345",
-    category: "Facilities",
-    description: "Noise in library",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    title: "Exam Marks",
-    studentId: "S23456",
-    category: "Academic",
-    description: "Incorrect marks entered",
-    status: "Resolved",
-  },
-  {
-    id: 3,
-    title: "Hostel Leak",
-    studentId: "S34567",
-    category: "Facilities",
-    description: "Water leakage in hostel",
-    status: "Pending",
-  },
-  {
-    id: 4,
-    title: "Cafeteria Issue",
-    studentId: "S45678",
-    category: "Facilities",
-    description: "Food quality problem",
-    status: "Rejected",
-  },
-];
 
 const FacultyDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [grievances, setGrievances] = useState<Grievance[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [grievances, setGrievances] = useState(dummyGrievances);
   const [statusUpdates, setStatusUpdates] = useState<Record<number, Grievance["status"]>>({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  // ✅ Load all grievances
+  useEffect(() => {
+    const fetchGrievances = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        console.log("Logged-in faculty:", user);
+
+        const res = await grievanceService.getAll();
+        // if paginated, data.content else full array
+        setGrievances(res.content || res);
+      } catch (err) {
+        console.error("Error loading grievances:", err);
+        setError("Failed to load grievances. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGrievances();
+  }, []);
 
   const handleExpand = (id: number) => setExpandedId(expandedId === id ? null : id);
 
-  const handleStatusChange = (id: number, newStatus: Grievance["status"]) =>
+  const handleStatusChange = (id: number, newStatus: Grievance["status"]) => {
     setStatusUpdates((prev) => ({ ...prev, [id]: newStatus }));
+  };
 
-  const handleUpdateGrievance = (id: number) => {
-    const updatedStatus = statusUpdates[id] || grievances.find((g) => g.id === id)?.status;
-    if (!updatedStatus) return;
+  const handleUpdateGrievance = async (id: number) => {
+    const newStatus = statusUpdates[id];
+    if (!newStatus) return;
 
-    setGrievances((prev) =>
-      prev.map((g) =>
-        g.id === id
-          ? { ...g, status: updatedStatus, description: updatedStatus === "Resolved" ? g.description + " (Resolved)" : g.description }
-          : g
-      )
-    );
-
-    if (updatedStatus === "Resolved") {
-      setStatusUpdates((prev) => {
-        const copy = { ...prev };
-        delete copy[id];
-        return copy;
-      });
+    try {
+      await grievanceService.updateStatus(id, newStatus);
+      setGrievances((prev) =>
+        prev.map((g) => (g.id === id ? { ...g, status: newStatus } : g))
+      );
+      setSuccessMsg(`Grievance #${id} updated to ${newStatus}`);
+      setTimeout(() => setSuccessMsg(""), 2000);
+    } catch (err) {
+      console.error("Update failed:", err);
+      setError("Failed to update grievance.");
+      setTimeout(() => setError(""), 2000);
     }
   };
 
   const filteredGrievances = grievances.filter(
-    (g) => g.title.toLowerCase().includes(searchTerm.toLowerCase()) || g.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (g) =>
+      g.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      g.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      g.registrationNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const statusColors: Record<string, string> = {
-    Pending: "black",
-    Resolved: "green",
-    Rejected: "red",
+    SUBMITTED: "black",
+    IN_PROGRESS: "#007bff",
+    RESOLVED: "green",
+    REJECTED: "red",
   };
 
-  // Summary counts
+  const handleLogout = () => {
+    authService.logout();
+    navigate("/auth/login");
+  };
+
+  // ✅ Dashboard counts
   const totalCount = grievances.length;
-  const pendingCount = grievances.filter((g) => g.status === "Pending").length;
-  const resolvedCount = grievances.filter((g) => g.status === "Resolved").length;
-  const rejectedCount = grievances.filter((g) => g.status === "Rejected").length;
+  const submittedCount = grievances.filter((g) => g.status === "SUBMITTED").length;
+  const inProgressCount = grievances.filter((g) => g.status === "IN_PROGRESS").length;
+  const resolvedCount = grievances.filter((g) => g.status === "RESOLVED").length;
+  const rejectedCount = grievances.filter((g) => g.status === "REJECTED").length;
 
   return (
-    <Box sx={{ width: "100vw", minHeight: "100vh", backgroundColor: "#e0f7fa", p: 3, display: "flex", justifyContent: "center", alignItems: "flex-start" }}>
-      <Card sx={{ maxWidth: 1050, width: "100%", p: 3, position: "relative" }}>
+    <Box
+      sx={{
+        width: "100vw",
+        minHeight: "100vh",
+        backgroundColor: "#e0f7fa",
+        p: 3,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+      }}
+    >
+      <Card sx={{ maxWidth: 1100, width: "100%", p: 3, position: "relative" }}>
         {/* Logout */}
         <Button
           variant="outlined"
           sx={{ position: "absolute", top: 16, right: 16, color: "#000", borderColor: "#ccc" }}
-          onClick={() => navigate("/auth/login")}
+          onClick={handleLogout}
         >
           Logout
         </Button>
@@ -120,27 +132,22 @@ const FacultyDashboard: React.FC = () => {
         {/* Header */}
         <Box textAlign="center" mb={3}>
           <img src={logo} alt="College Logo" style={{ width: "700px", marginBottom: "10px" }} />
-          <Typography variant="h6" fontWeight="bold">Faculty Dashboard</Typography>
+          <Typography variant="h6" fontWeight="bold">
+            Faculty Dashboard
+          </Typography>
         </Box>
 
-        {/* Summary Boxes */}
+        {/* Notifications */}
+        {successMsg && <Alert severity="success" sx={{ mb: 2 }}>{successMsg}</Alert>}
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+        {/* Summary */}
         <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-          <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
-            <Typography variant="h6">Total</Typography>
-            <Typography variant="h4">{totalCount}</Typography>
-          </Card>
-          <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
-            <Typography variant="h6">Pending</Typography>
-            <Typography variant="h4" sx={{ color: "black" }}>{pendingCount}</Typography>
-          </Card>
-          <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
-            <Typography variant="h6">Resolved</Typography>
-            <Typography variant="h4" sx={{ color: "green" }}>{resolvedCount}</Typography>
-          </Card>
-          <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
-            <Typography variant="h6">Rejected</Typography>
-            <Typography variant="h4" sx={{ color: "red" }}>{rejectedCount}</Typography>
-          </Card>
+          <SummaryCard label="Total" value={totalCount} color="#000" />
+          <SummaryCard label="Submitted" value={submittedCount} color="black" />
+          <SummaryCard label="In Progress" value={inProgressCount} color="#007bff" />
+          <SummaryCard label="Resolved" value={resolvedCount} color="green" />
+          <SummaryCard label="Rejected" value={rejectedCount} color="red" />
         </Box>
 
         {/* Search */}
@@ -152,50 +159,98 @@ const FacultyDashboard: React.FC = () => {
           sx={{ mb: 3, backgroundColor: "#fff", borderRadius: 1 }}
         />
 
-        {/* Grievance List */}
-        {filteredGrievances.map((g) => (
-          <Card key={g.id} sx={{ mb: 2, bgcolor: "#f5f5f5", cursor: "pointer" }} onClick={() => handleExpand(g.id)}>
-            <CardContent>
-              <Typography variant="h6">{g.title}</Typography>
-              <Typography variant="body2" sx={{ color: statusColors[g.status] }}>Status: {g.status}</Typography>
+        {/* Content */}
+        {loading ? (
+          <Box textAlign="center">
+            <CircularProgress />
+            <Typography>Loading grievances...</Typography>
+          </Box>
+        ) : filteredGrievances.length === 0 ? (
+          <Typography>No grievances found.</Typography>
+        ) : (
+          filteredGrievances.map((g) => (
+            <Card
+              key={g.id}
+              sx={{ mb: 2, bgcolor: "#f5f5f5", cursor: "pointer" }}
+              onClick={() => handleExpand(g.id)}
+            >
+              <CardContent>
+                <Typography variant="h6">{g.title}</Typography>
+                <Typography variant="body2" sx={{ color: statusColors[g.status] }}>
+                  Status: {g.status.replace("_", " ")}
+                </Typography>
 
-              <Collapse in={expandedId === g.id}>
-                <Box mt={2}>
-                  <Typography>Student ID: {g.studentId}</Typography>
-                  <Typography>Category: {g.category}</Typography>
-                  <Typography>Description: {g.description}</Typography>
+                <Collapse in={expandedId === g.id}>
+                  <Box mt={2}>
+                    <Typography>
+                      <strong>Registration Number:</strong> {g.registrationNumber}
+                    </Typography>
+                    <Typography>
+                      <strong>Category:</strong> {g.category}
+                    </Typography>
+                    <Typography>
+                      <strong>Subcategory:</strong> {g.subcategory}
+                    </Typography>
+                    <Typography>
+                      <strong>Description:</strong> {g.description}
+                    </Typography>
 
-                  {/* Update controls */}
-                  {g.status !== "Resolved" && (
-                    <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 2 }}>
-                      <TextField
-                        select
-                        label="Update Status"
-                        value={statusUpdates[g.id] || g.status}
-                        onChange={(e) => handleStatusChange(g.id, e.target.value as Grievance["status"])}
-                        sx={{ minWidth: 150 }}
-                      >
-                        <MenuItem value="Pending">Pending</MenuItem>
-                        <MenuItem value="Resolved">Resolved</MenuItem>
-                        <MenuItem value="Rejected">Rejected</MenuItem>
-                      </TextField>
+                    {g.status !== "RESOLVED" && g.status !== "REJECTED" && (
+                      <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 2 }}>
+                        <TextField
+                          select
+                          label="Update Status"
+                          value={statusUpdates[g.id] || g.status}
+                          onChange={(e) =>
+                            handleStatusChange(g.id, e.target.value as Grievance["status"])
+                          }
+                          sx={{ minWidth: 180 }}
+                        >
+                          <MenuItem value="SUBMITTED">Submitted</MenuItem>
+                          <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+                          <MenuItem value="RESOLVED">Resolved</MenuItem>
+                          <MenuItem value="REJECTED">Rejected</MenuItem>
+                        </TextField>
 
-                      <Button
-                        variant="contained"
-                        onClick={(e) => { e.stopPropagation(); handleUpdateGrievance(g.id); }}
-                      >
-                        Update Grievance
-                      </Button>
-                    </Box>
-                  )}
-                </Box>
-              </Collapse>
-            </CardContent>
-          </Card>
-        ))}
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateGrievance(g.id);
+                          }}
+                        >
+                          Update
+                        </Button>
+                      </Box>
+                    )}
+                  </Box>
+                </Collapse>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </Card>
     </Box>
   );
 };
+
+// ✅ Summary card component
+const SummaryCard = ({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: string;
+}) => (
+  <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
+    <Typography variant="h6">{label}</Typography>
+    <Typography variant="h4" sx={{ color }}>
+      {value}
+    </Typography>
+  </Card>
+);
 
 export default FacultyDashboard;

@@ -3,6 +3,6 @@ package com.college.icrs.model;
 public enum Status {
 
     SUBMITTED,
-    INPROGRESS,
+    IN_PROGRESS,
     RESOLVED
 }

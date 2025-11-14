@@ -3,8 +3,11 @@ package com.college.icrs.service;
 import com.college.icrs.dto.LoginUserDto;
 import com.college.icrs.dto.RegisterUserDto;
 import com.college.icrs.dto.VerifyUserDto;
+import com.college.icrs.model.Role;
 import com.college.icrs.model.User;
 import com.college.icrs.repository.UserRepository;
+import com.college.icrs.responses.LoginResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -13,145 +16,156 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.swing.*;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
 
 @Service
+@RequiredArgsConstructor
 public class AuthenticationService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
+    private final JwtService jwtService;
 
-
-    public AuthenticationService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, EmailService emailService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.authenticationManager = authenticationManager;
-        this.emailService = emailService;
-    }
-
-    public User signup(RegisterUserDto input){
+    /**
+     * ✅ Register a new user and send verification email
+     */
+    public User signup(RegisterUserDto input) {
         if (userRepository.findByEmail(input.getEmail()).isPresent()) {
             throw new RuntimeException("User with email " + input.getEmail() + " already exists.");
         }
 
-        User user = new User(input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()));
+        User user = new User();
+
+        // ✅ Correct mapping
+        user.setUsername(input.getUsername()); // full name (display)
+        user.setEmail(input.getEmail()); // login identity
+        user.setPassword(passwordEncoder.encode(input.getPassword()));
+        user.setDepartment(input.getDepartment());
+        user.setStudentId(input.getStudentId()); // ✅ previously missing
+        user.setRole(Role.STUDENT);
+        user.setEnabled(false); // must verify before login
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
-        user.setEnabled(true);
+        System.out.println("🧾 Signup DTO received: " + input);
+
+        userRepository.save(user);
         sendVerificationEmail(user);
-
-        return userRepository.save(user);
-    }
-
-
-    public User login(LoginUserDto input){
-        User user = userRepository.findByEmail(input.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found!"));
-
-        if (!user.isEnabled()){
-            throw new RuntimeException("Account is not verified, please verify your account!");
-        }
-
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        input.getEmail(),
-                        input.getPassword()
-                )
-        );
 
         return user;
     }
 
-    public void verifyUser(VerifyUserDto input){
-        Optional<User> optionalUser = userRepository.findByEmail(input.getEmail());
-        if (optionalUser.isPresent()){
-            User user  = optionalUser.get();
-            if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())){
-                throw new RuntimeException("Verification code has expiration");
-            }
-            if(user.getVerificationCode().equals(input.getVerificationCode())){
-                user.setEnabled(true);
-                user.setVerificationCode(null);
-                user.setVerificationCodeExpiresAt(null);
-                userRepository.save(user);
-            }else{
-                throw new RuntimeException("Invalid verification code");
-            }
-        }else{
-            throw new RuntimeException("User not found");
+    /**
+     * ✅ Login with email and password, returns JWT token + expiry
+     */
+    public LoginResponse login(LoginUserDto input) {
+        // Verify user exists
+        User user = userRepository.findByEmail(input.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + input.getEmail()));
+
+        if (!user.isEnabled()) {
+            throw new RuntimeException("Account not verified. Please verify your email.");
         }
-    }
 
-    public void resendVerificationCode(String email){
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        if(optionalUser.isPresent()){
-            User user = optionalUser.get();
-            if (user.isEnabled()){
-                throw new RuntimeException("Account is already verified");
-            }
-            user.setVerificationCode(generateVerificationCode());
-            user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(10));
+        // Spring Security authentication
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(input.getEmail(), input.getPassword()));
 
-            sendVerificationEmail(user);
-            userRepository.save(user);
-        }else{
-            throw new RuntimeException("User not found!");
-        }
-    }
+        // ✅ Generate JWT token with email as subject
+        String jwtToken = jwtService.generateToken(user);
 
-    public void sendVerificationEmail(User user){
-        String subject = "ICRS account verification code";
-        String verificationCode = "VERIFICATION CODE " + user.getVerificationCode();
-        String htmlMessage = "<html>"
-                + "<body style=\"font-family: Arial, sans-serif;\">"
-                + "<div style=\"background-color: #f5f5f5; padding: 20px;\">"
-                + "<h2 style=\"color: #333;\">Welcome to ICRS!</h2>"
-                + "<p style=\"font-size: 16px;\">Please enter the verification code below to continue:</p>"
-                + "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1);\">"
-                + "<h3 style=\"color: #333;\">Verification Code:</h3>"
-                + "<p style=\"font-size: 18px; font-weight: bold; color: #007bff;\">" + verificationCode + "</p>"
-                + "</div>"
-                + "</div>"
-                + "</body>"
-                + "</html>";
-
-        try{
-
-
-            emailService.sendVerificationEmail(user.getEmail(), subject, htmlMessage);
-
-        }catch (Exception e){
-            e.printStackTrace();
-        }
+        return new LoginResponse(
+                jwtToken,
+                jwtService.getExpirationTime(),
+                user.getRole().name(), // 👈 send FACULTY or STUDENT
+                user.getUsername(),
+                user.getEmail());
 
     }
 
-    private String generateVerificationCode(){
-        Random random = new Random();
-        int code = random.nextInt(900000) + 10000;
+    /**
+     * ✅ Verify user using email + verification code
+     */
+    public void verifyUser(VerifyUserDto input) {
+        User user = userRepository.findByEmail(input.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getVerificationCodeExpiresAt() == null ||
+                user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Verification code expired. Please request a new one.");
+        }
+
+        if (!user.getVerificationCode().equals(input.getVerificationCode())) {
+            throw new RuntimeException("Invalid verification code.");
+        }
+
+        user.setEnabled(true);
+        user.setVerificationCode(null);
+        user.setVerificationCodeExpiresAt(null);
+        userRepository.save(user);
+    }
+
+    /**
+     * ✅ Resend verification code for unverified accounts
+     */
+    public void resendVerificationCode(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.isEnabled()) {
+            throw new RuntimeException("Account already verified.");
+        }
+
+        user.setVerificationCode(generateVerificationCode());
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(10));
+        userRepository.save(user);
+
+        sendVerificationEmail(user);
+    }
+
+    /**
+     * ✅ Send verification email
+     */
+    private void sendVerificationEmail(User user) {
+        String subject = "ICRS Account Verification Code";
+        String html = "<h2>Welcome to ICRS</h2>"
+                + "<p>Your verification code is: <b>" + user.getVerificationCode() + "</b></p>"
+                + "<p>This code will expire in 15 minutes.</p>";
+
+        try {
+            emailService.sendVerificationEmail(user.getEmail(), subject, html);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send verification email: " + e.getMessage());
+        }
+    }
+
+    /**
+     * ✅ Generate a secure random 6-digit code
+     */
+    private String generateVerificationCode() {
+        int code = new Random().nextInt(900000) + 100000; // 100000–999999
         return String.valueOf(code);
     }
 
+    /**
+     * ✅ Retrieve the authenticated user from the SecurityContext
+     */
     public User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null || !authentication.isAuthenticated() ||
+                authentication.getPrincipal().equals("anonymousUser")) {
             return null;
         }
 
         Object principal = authentication.getPrincipal();
-
-        if (principal instanceof UserDetails) {
-            return (User) principal;
+        if (principal instanceof UserDetails userDetails) {
+            Optional<User> user = userRepository.findByEmail(userDetails.getUsername());
+            return user.orElse(null);
         }
-
-        // If principal is a string (like "anonymousUser") or other, handle accordingly
         return null;
     }
-
 }

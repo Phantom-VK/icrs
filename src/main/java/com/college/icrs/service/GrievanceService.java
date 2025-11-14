@@ -1,8 +1,6 @@
 package com.college.icrs.service;
 
-
 import com.college.icrs.model.Grievance;
-import com.college.icrs.model.Priority;
 import com.college.icrs.model.Status;
 import com.college.icrs.model.User;
 import com.college.icrs.repository.GrievanceRepository;
@@ -15,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -29,22 +26,34 @@ public class GrievanceService {
         this.userRepository = userRepository;
     }
 
-    // Create new grievance
+    // ✅ Create and link grievance directly to student
     public Grievance createGrievance(Grievance grievance, Long studentId) {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found with id: " + studentId));
+
         grievance.setStudent(student);
         grievance.setStatus(Status.SUBMITTED);
-        return grievanceRepository.save(grievance);
+       
+
+        Grievance saved = grievanceRepository.save(grievance);
+        System.out.println("✅ Grievance created for student ID " + studentId + " | Grievance ID: " + saved.getId());
+        return saved;
     }
 
-    // Get grievance by ID
+    // ✅ Simple save (used internally for direct entity persistence)
+    public Grievance saveGrievance(Grievance grievance) {
+        Grievance saved = grievanceRepository.save(grievance);
+        System.out.println("📝 Grievance saved: ID=" + saved.getId());
+        return saved;
+    }
+
+    // ✅ Retrieve single grievance
     public Grievance getGrievanceById(Long id) {
         return grievanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Grievance not found with id: " + id));
     }
 
-    // Update grievance
+    // ✅ Update grievance details
     public Grievance updateGrievance(Long id, Grievance grievanceDetails) {
         Grievance grievance = getGrievanceById(id);
 
@@ -52,88 +61,82 @@ public class GrievanceService {
         grievance.setDescription(grievanceDetails.getDescription());
         grievance.setCategory(grievanceDetails.getCategory());
         grievance.setSubcategory(grievanceDetails.getSubcategory());
-        grievance.setPriority(grievanceDetails.getPriority());
         grievance.setStatus(grievanceDetails.getStatus());
 
         return grievanceRepository.save(grievance);
     }
 
-    // Delete grievance
+    // ✅ Delete grievance
     public void deleteGrievance(Long id) {
         Grievance grievance = getGrievanceById(id);
         grievanceRepository.delete(grievance);
+        System.out.println("🗑️ Grievance deleted: ID=" + id);
     }
 
-    // Get all grievances with pagination
+    // ✅ Retrieve all grievances (for faculty/admin)
     public Page<Grievance> getAllGrievances(Pageable pageable) {
         return grievanceRepository.findAll(pageable);
     }
 
-    // Get grievances by student ID
+    // ✅ Retrieve grievances by student
     public List<Grievance> getGrievancesByStudent(Long studentId) {
         return grievanceRepository.findByStudentId(studentId);
     }
 
-    // Get grievances by status with pagination
+    // ✅ Retrieve grievances filtered by status
     public Page<Grievance> getGrievancesByStatus(Status status, Pageable pageable) {
         return grievanceRepository.findByStatus(status, pageable);
     }
 
-    // Get grievances by priority and category
-    public List<Grievance> getGrievancesByPriorityAndCategory(Priority priority, String category) {
-        return grievanceRepository.findByPriorityAndCategory(priority, category);
-    }
-
-    // Get grievances by category and status
+    // ✅ Retrieve grievances filtered by category + status
     public List<Grievance> getGrievancesByCategoryAndStatus(String category, Status status) {
         return grievanceRepository.findByCategoryAndStatus(category, status);
     }
 
-    // Get grievances assigned to faculty
+    // ✅ Retrieve grievances assigned to a faculty member
     public List<Grievance> getGrievancesByFaculty(Long facultyId) {
         return grievanceRepository.findByAssignedToId(facultyId);
     }
 
-    // Assign grievance to faculty
+    // ✅ Assign grievance to faculty (moves to IN_PROGRESS)
     public Grievance assignGrievanceToFaculty(Long grievanceId, Long facultyId) {
         Grievance grievance = getGrievanceById(grievanceId);
         User faculty = userRepository.findById(facultyId)
                 .orElseThrow(() -> new RuntimeException("Faculty not found with id: " + facultyId));
 
         grievance.setAssignedTo(faculty);
-        grievance.setStatus(Status.INPROGRESS);
-
+        grievance.setStatus(Status.IN_PROGRESS);
         return grievanceRepository.save(grievance);
     }
 
-    // Update grievance status
+    // ✅ Update grievance status (Faculty/Admin use)
     public Grievance updateGrievanceStatus(Long grievanceId, Status status) {
         Grievance grievance = getGrievanceById(grievanceId);
         grievance.setStatus(status);
         return grievanceRepository.save(grievance);
     }
 
-    // Resolve grievance
+    // ✅ Resolve grievance directly
     public Grievance resolveGrievance(Long grievanceId) {
         Grievance grievance = getGrievanceById(grievanceId);
         grievance.setStatus(Status.RESOLVED);
         return grievanceRepository.save(grievance);
     }
 
-
-    // Search grievances by title (custom implementation)
+    // ✅ Search grievances by title (basic, case-insensitive)
     public List<Grievance> searchGrievancesByTitle(String title) {
         return grievanceRepository.findAll().stream()
-                .filter(g -> g.getTitle().toLowerCase().contains(title.toLowerCase()))
-                .collect(Collectors.toList());
+                .filter(g -> g.getTitle() != null &&
+                        g.getTitle().toLowerCase().contains(title.toLowerCase()))
+                .toList();
     }
 
-    // Get grievance statistics
+    // ✅ Generate grievance statistics summary
     public Map<String, Long> getGrievanceStatistics() {
         Map<String, Long> stats = new HashMap<>();
         stats.put("total", grievanceRepository.count());
         stats.put("submitted", grievanceRepository.findByStatus(Status.SUBMITTED, Pageable.unpaged()).getTotalElements());
-        stats.put("inProgress", grievanceRepository.findByStatus(Status.INPROGRESS, Pageable.unpaged()).getTotalElements());
+        stats.put("inProgress", grievanceRepository.findByStatus(Status.IN_PROGRESS, Pageable.unpaged()).getTotalElements());
         stats.put("resolved", grievanceRepository.findByStatus(Status.RESOLVED, Pageable.unpaged()).getTotalElements());
         return stats;
     }

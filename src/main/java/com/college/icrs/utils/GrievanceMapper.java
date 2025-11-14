@@ -22,6 +22,7 @@ public class GrievanceMapper {
         grievance.setDescription(dto.getDescription());
         grievance.setCategory(dto.getCategory());
         grievance.setSubcategory(dto.getSubcategory());
+        grievance.setRegistrationNumber(dto.getRegistrationNumber());
         return grievance;
     }
 
@@ -36,9 +37,8 @@ public class GrievanceMapper {
         dto.setDescription(grievance.getDescription());
         dto.setCategory(grievance.getCategory());
         dto.setSubcategory(grievance.getSubcategory());
-        dto.setPriority(grievance.getPriority());
         dto.setStatus(grievance.getStatus());
-
+        dto.setRegistrationNumber(grievance.getRegistrationNumber());
         // Map user names
         if (grievance.getStudent() != null) {
             dto.setStudentName(grievance.getStudent().getUsername());

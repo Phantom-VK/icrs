@@ -1,18 +1,16 @@
 package com.college.icrs.responses;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import lombok.Getter;
-import lombok.Setter;
-
-@Setter
-@Getter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class LoginResponse {
-
-    private String token;
-    private long expiresIn;
-
-    public LoginResponse(String token, long expiresIn) {
-        this.token = token;
-        this.expiresIn = expiresIn;
-    }
+    private String token;      // JWT token
+    private long expiresIn;// Token expiration time (ms)
+    private String role;      // 👈 IMPORTANT
+    private String username;  // optional but useful
+    private String email;
 }

@@ -9,9 +9,9 @@ version = "0.0.1-SNAPSHOT"
 description = "College Grievance Redressal System backend"
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+	//toolchain {
+		//languageVersion = JavaLanguageVersion.of(21)
+	//}
 }
 
 repositories {
