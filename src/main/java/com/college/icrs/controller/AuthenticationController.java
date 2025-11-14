@@ -6,56 +6,75 @@ import com.college.icrs.dto.VerifyUserDto;
 import com.college.icrs.model.User;
 import com.college.icrs.responses.LoginResponse;
 import com.college.icrs.service.AuthenticationService;
-import com.college.icrs.service.JwtService;
+import lombok.RequiredArgsConstructor;
+import java.util.HashMap;
+import java.util.Map;
+
+//import java.util.HashMap;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth") // ✅ Unified API prefix
+@RequestMapping("/auth") // ✅ Plain route — no "/api"
+@CrossOrigin(origins = "http://localhost:3000") // ✅ Allow frontend during dev
+@RequiredArgsConstructor
 public class AuthenticationController {
 
-    private final JwtService jwtService;
     private final AuthenticationService authenticationService;
 
-    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService) {
-        this.jwtService = jwtService;
-        this.authenticationService = authenticationService;
-    }
-
-    /**
-     * ✅ Register a new user and send verification email
-     */
+    // ✅ Signup
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody RegisterUserDto registerUserDto) {
         try {
-            User registeredUser = authenticationService.signup(registerUserDto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
+            User user = authenticationService.signup(registerUserDto);
+
+            // 🔥 Create safe response (shows verification code ONLY during signup)
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", user.getId());
+            response.put("email", user.getEmail());
+            response.put("username", user.getUsername()); // Full name
+            response.put("department", user.getDepartment());
+            response.put("studentId", user.getStudentId());
+            response.put("enabled", user.isEnabled());
+
+            // 👇 The important part
+            response.put("verificationCode", user.getVerificationCode());
+            response.put("verificationCodeExpiresAt", user.getVerificationCodeExpiresAt());
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body("❌ Signup failed: " + e.getMessage());
         }
     }
 
-    /**
-     * ✅ Login user and return JWT token + expiration time
-     */
+    // ✅ Login
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginUserDto loginUserDto) {
         try {
-            String jwtToken = authenticationService.login(loginUserDto); // returns token string
-            LoginResponse response = new LoginResponse(jwtToken, jwtService.getExpirationTime());
+            // AuthenticationService now returns the UPDATED LoginResponse
+            LoginResponse response = authenticationService.login(loginUserDto);
             return ResponseEntity.ok(response);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new LoginResponse("❌ " + e.getMessage(), 0));
+            // ❌ Error response must ALSO satisfy the 5-argument LoginResponse constructor
+            LoginResponse errorResponse = new LoginResponse(
+                    null, // token
+                    0, // expiresIn
+                    null, // role
+                    null, // username
+                    "❌ " + e.getMessage() // email field repurposed as message
+            );
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
         }
     }
 
-    /**
-     * ✅ Verify user account using email + code
-     */
+    // ✅ Verify account
     @PostMapping("/verify")
-    public ResponseEntity<?> verifyUser(@RequestBody VerifyUserDto verifyUserDto) {
+    public ResponseEntity<String> verifyUser(@RequestBody VerifyUserDto verifyUserDto) {
         try {
             authenticationService.verifyUser(verifyUserDto);
             return ResponseEntity.ok("✅ Account verified successfully.");
@@ -64,11 +83,9 @@ public class AuthenticationController {
         }
     }
 
-    /**
-     * ✅ Resend verification code
-     */
+    // ✅ Resend verification code
     @PostMapping("/resend")
-    public ResponseEntity<?> resendVerificationCode(@RequestParam String email) {
+    public ResponseEntity<String> resendVerificationCode(@RequestParam String email) {
         try {
             authenticationService.resendVerificationCode(email);
             return ResponseEntity.ok("✅ Verification code sent successfully!");

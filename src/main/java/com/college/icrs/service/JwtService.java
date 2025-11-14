@@ -20,17 +20,17 @@ public class JwtService {
     private String secretKey;
 
     @Value("${security.jwt.expiration-time}")
-    private long jwtExpiration;
+    private long jwtExpiration; // e.g. 86400000 = 24h
 
     /**
-     * Extract username (email) from JWT token
+     * ✅ Extracts the JWT subject (email) from the token.
      */
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
     /**
-     * Extract a specific claim from the JWT
+     * Generic claim extractor.
      */
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
@@ -38,64 +38,61 @@ public class JwtService {
     }
 
     /**
-     * ✅ Generate a JWT using the user's email as the subject.
-     * This is the main method your AuthenticationService should use.
+     * ✅ Always uses user email as JWT subject, even if getUsername() returns full name.
      */
     public String generateToken(UserDetails userDetails) {
-        String subject;
-
-        // Ensure the email is stored in the "sub" claim
-        if (userDetails instanceof com.college.icrs.model.User user) {
-            subject = user.getEmail();
-        } else {
-            subject = userDetails.getUsername(); // fallback
-        }
-
+        String subject = resolveSubject(userDetails);
         return buildToken(Map.of(), subject, jwtExpiration);
     }
 
     /**
-     * Overloaded version to include custom claims if needed.
+     * ✅ Overloaded token builder that supports extra claims.
      */
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        String subject;
-
-        if (userDetails instanceof com.college.icrs.model.User user) {
-            subject = user.getEmail();
-        } else {
-            subject = userDetails.getUsername();
-        }
-
+        String subject = resolveSubject(userDetails);
         return buildToken(extraClaims, subject, jwtExpiration);
     }
 
     /**
-     * Build the actual JWT token with claims, subject, issue time, and expiry.
+     * ✅ Determines what goes inside the JWT `sub` (subject) field.
+     * Always email-based to keep downstream logic consistent.
+     */
+    private String resolveSubject(UserDetails userDetails) {
+        if (userDetails instanceof com.college.icrs.model.User user) {
+            // Always use the email field for token identity
+            return user.getEmail();
+        }
+        // Fallback (should never happen unless another UserDetails type is used)
+        return userDetails.getUsername();
+    }
+
+    /**
+     * ✅ Builds and signs the JWT.
      */
     private String buildToken(Map<String, Object> extraClaims, String subject, long expiration) {
+        long now = System.currentTimeMillis();
         return Jwts.builder()
                 .claims(extraClaims)
                 .subject(subject)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .issuedAt(new Date(now))
+                .expiration(new Date(now + expiration))
                 .signWith(getSignInKey())
                 .compact();
     }
 
     /**
-     * Validate a JWT token by comparing the email and ensuring it’s not expired.
+     * ✅ Validates token (checks subject and expiry).
      */
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String email = extractUsername(token);
+        final boolean notExpired = !isTokenExpired(token);
+
         if (userDetails instanceof com.college.icrs.model.User user) {
-            return email.equals(user.getEmail()) && !isTokenExpired(token);
+            return email.equalsIgnoreCase(user.getEmail()) && notExpired;
         }
-        return email.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        return email.equalsIgnoreCase(userDetails.getUsername()) && notExpired;
     }
 
-    /**
-     * Check if the token has expired.
-     */
     private boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
@@ -105,7 +102,7 @@ public class JwtService {
     }
 
     /**
-     * Extract all claims safely.
+     * ✅ Extracts all JWT claims using the configured signing key.
      */
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
@@ -116,16 +113,17 @@ public class JwtService {
     }
 
     /**
-     * Generate the signing key from the base64-encoded secret.
+     * ✅ Creates the signing key from Base64-encoded secret.
      */
     private SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
+        try {
+            byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+            return Keys.hmacShaKeyFor(keyBytes);
+        } catch (Exception e) {
+            throw new IllegalStateException("Invalid or missing JWT secret key configuration.", e);
+        }
     }
 
-    /**
-     * Return the configured expiration time (for frontend usage).
-     */
     public long getExpirationTime() {
         return jwtExpiration;
     }

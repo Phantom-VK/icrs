@@ -1,4 +1,3 @@
-// src/services/grievanceService.ts
 import api from "./apiClient";
 
 export interface GrievanceData {
@@ -7,60 +6,76 @@ export interface GrievanceData {
   category: string;
   subcategory?: string;
   registrationNumber?: string | number;
+  priority?: string; // optional if backend supports it
 }
 
 const grievanceService = {
-  /**
-   * ✅ Submit a new grievance (student)
-   */
+  /** ✅ Submit a new grievance (Student) */
   submit: async (data: GrievanceData) => {
-    console.log("📤 Submitting grievance:", data);
-    const response = await api.post("/grievances", data);
-    console.log("✅ Grievance submission response:", response.data);
-    return response.data;
+    try {
+      console.log("📤 Submitting grievance:", data);
+      const response = await api.post("/grievances", data);
+      console.log("✅ Grievance submitted successfully:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Failed to submit grievance:", error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || "Failed to submit grievance.");
+    }
   },
 
-  /**
-   * ✅ Get grievances of logged-in student (uses /api/grievances/student/me)
-   */
+  /** ✅ Get grievances submitted by the logged-in student */
   getMyGrievances: async () => {
-    console.log("📥 Fetching logged-in student's grievances...");
-    const response = await api.get("/grievances/student/me");
-    console.log("✅ Grievances fetched:", response.data);
-    return response.data;
+    try {
+      console.log("📥 Fetching grievances of logged-in student...");
+      const response = await api.get("/grievances/student/me");
+      console.log("✅ Grievances fetched:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Failed to fetch student's grievances:", error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || "Unable to fetch your grievances.");
+    }
   },
 
-  /**
-   * ✅ Get a specific grievance by ID
-   */
+  /** ✅ Get details of a specific grievance by ID */
   getById: async (id: number) => {
-    const response = await api.get(`/grievances/${id}`);
-    return response.data;
+    try {
+      console.log(`🔍 Fetching grievance with ID: ${id}`);
+      const response = await api.get(`/grievances/${id}`);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Failed to fetch grievance:", error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || "Grievance not found.");
+    }
   },
 
-  /**
-   * ✅ Get all grievances (faculty/admin)
-   */
-  getAll: async (
-    page = 0,
-    size = 10,
-    sortBy = "createdAt",
-    direction = "desc"
-  ) => {
-    const response = await api.get(`/grievances`, {
-      params: { page, size, sortBy, direction },
-    });
-    return response.data;
+  /** ✅ Get all grievances (Admin/Faculty use) */
+  getAll: async (page = 0, size = 10, sortBy = "createdAt", direction = "desc") => {
+    try {
+      console.log("📥 Fetching all grievances...");
+      const response = await api.get("/grievances", {
+        params: { page, size, sortBy, direction },
+      });
+      console.log("✅ All grievances fetched:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Failed to fetch grievances:", error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || "Unable to fetch grievances.");
+    }
   },
 
-  /**
-   * ✅ Update grievance status (faculty/admin)
-   */
+  /** ✅ Update grievance status (Faculty/Admin use) */
   updateStatus: async (id: number, status: string) => {
-    const response = await api.patch(`/grievances/${id}/status`, null, {
-      params: { status },
-    });
-    return response.data;
+    try {
+      console.log(`⚙️ Updating grievance #${id} status to: ${status}`);
+      const response = await api.patch(`/grievances/${id}/status`, null, {
+        params: { status },
+      });
+      console.log("✅ Grievance status updated:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Failed to update grievance status:", error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || "Unable to update grievance status.");
+    }
   },
 };
 

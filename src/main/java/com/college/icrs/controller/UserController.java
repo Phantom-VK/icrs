@@ -10,7 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/users") // ✅ Unified API prefix
+@RequestMapping("/users") // ✅ Plain root-level path — no /api prefix
+@CrossOrigin(origins = "http://localhost:3000") // ✅ Allow frontend during development
 public class UserController {
 
     private final UserService userService;
@@ -21,18 +22,18 @@ public class UserController {
 
     @PostConstruct
     public void printRoutes() {
-        System.out.println("🗺️ UserController active: /api/users/me, /api/users/test");
+        System.out.println("🗺️ UserController active: /users/me, /users/test, /users");
     }
 
     /**
-     * ✅ Returns authenticated user details (email derived from JWT)
+     * ✅ Returns details of the authenticated user (derived from JWT email)
      */
     @GetMapping("/me")
     public ResponseEntity<User> getAuthenticatedUser(Authentication authentication) {
-        System.out.println("🟢 /api/users/me endpoint hit");
+        System.out.println("🟢 /users/me endpoint hit");
 
         if (authentication == null || authentication.getName() == null) {
-            System.out.println("⚠️ No authentication context found");
+            System.out.println("⚠️ No authentication context found — unauthorized request");
             return ResponseEntity.status(401).build();
         }
 
@@ -45,7 +46,7 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
 
-        // ✅ Sanitize sensitive fields
+        // ✅ Sanitize sensitive fields before returning
         currentUser.setPassword(null);
         currentUser.setVerificationCode(null);
         currentUser.setVerificationCodeExpiresAt(null);
@@ -55,20 +56,25 @@ public class UserController {
     }
 
     /**
-     * ✅ Returns all users (admin use only)
+     * ✅ Returns all users (intended for admin use only)
      */
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.allUsers();
-        users.forEach(u -> u.setPassword(null));
+        users.forEach(u -> {
+            u.setPassword(null);
+            u.setVerificationCode(null);
+            u.setVerificationCodeExpiresAt(null);
+        });
         return ResponseEntity.ok(users);
     }
 
     /**
-     * ✅ Test route for connectivity
+     * ✅ Test route for connectivity verification
      */
     @GetMapping("/test")
     public String testRoute() {
-        return "✅ /api/users/test route works!";
+        System.out.println("🧩 /users/test route hit successfully");
+        return "✅ /users/test route works!";
     }
 }

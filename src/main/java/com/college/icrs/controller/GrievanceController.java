@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/grievances") // ✅ unified API prefix
+@RequestMapping("/grievances") // ✅ unified API prefix
 @Validated
 public class GrievanceController {
 

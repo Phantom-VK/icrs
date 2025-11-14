@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
@@ -24,6 +25,16 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     private final HandlerExceptionResolver handlerExceptionResolver;
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+
+    // ✅ Public (non-authenticated) routes — no filtering
+    private static final List<String> EXCLUDED_PATHS = List.of(
+            "/auth/signup",
+            "/auth/login",
+            "/auth/verify",
+            "/auth/resend",
+            "/error",
+            "/actuator"
+    );
 
     public JWTAuthenticationFilter(
             JwtService jwtService,
@@ -34,21 +45,30 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         this.userDetailsService = userDetailsService;
     }
 
+    /**
+     * ✅ Skip JWT filtering for public endpoints
+     */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        // Skip public endpoints
-        return request.getServletPath().startsWith("/auth/");
+        String path = request.getServletPath();
+        // Skip authentication for open routes
+        return EXCLUDED_PATHS.stream().anyMatch(path::startsWith);
     }
 
+    /**
+     * ✅ JWT validation logic
+     */
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain) throws ServletException, IOException {
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            // No token → skip to next filter (may hit permitted route)
             filterChain.doFilter(request, response);
             return;
         }
@@ -57,21 +77,30 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             final String jwt = authHeader.substring(7);
             final String userEmail = jwtService.extractUsername(jwt);
 
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
 
-            if (userEmail != null && authentication == null) {
+            if (userEmail != null && currentAuth == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
-                            null, userDetails.getAuthorities());
+                    // ✅ Build authentication token
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
 
+            // Proceed with chain
             filterChain.doFilter(request, response);
+
         } catch (Exception e) {
+            // ✅ Centralized exception handling (no raw stack traces)
             handlerExceptionResolver.resolveException(request, response, null, e);
         }
     }

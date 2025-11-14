@@ -5,9 +5,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class LoginResponse {
-    private String token;
-    private long expiresIn;
+    private String token;      // JWT token
+    private long expiresIn;// Token expiration time (ms)
+    private String role;      // 👈 IMPORTANT
+    private String username;  // optional but useful
+    private String email;
 }

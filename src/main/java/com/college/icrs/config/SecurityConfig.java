@@ -31,31 +31,40 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // ✅ Disable CSRF since we're using JWT-based authentication
                 .csrf(AbstractHttpConfigurer::disable)
+
+                // ✅ Enable CORS for frontend dev servers
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // ✅ Route access configuration
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ Public endpoints (accessible without JWT)
+                        // Public endpoints — accessible without authentication
                         .requestMatchers(
-                                "/auth/**",        // login, signup, verify
-                                "/users/test",     // for testing
-                                "/error",          // avoid blocking error pages
-                                "/actuator/**"     // optional: for diagnostics
+                                "/auth/**",       // signup, login, verify, resend
+                                "/error",         // default error handler
+                                "/actuator/**"    // optional diagnostic endpoints
                         ).permitAll()
 
-                        // ✅ Protected endpoints (require JWT)
+                        // Protected routes — require JWT authentication
                         .requestMatchers(
-                                "/users/**",
-                                "/api/**",
-                                "/grievances/**"
+                                "/users/**",      // profile, current user, etc.
+                                "/grievances/**"  // grievance submission/tracking
                         ).authenticated()
 
-                        // ✅ Default: everything else is blocked
+                        // Block everything else by default (security best practice)
                         .anyRequest().denyAll()
                 )
+
+                // ✅ Stateless sessions (each request authenticated via JWT)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+
+                // ✅ Use custom authentication provider (e.g., DaoAuthenticationProvider)
                 .authenticationProvider(authenticationProvider)
+
+                // ✅ Add JWT filter before username/password filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -65,8 +74,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:3000"
+                "http://localhost:5173", // Vite frontend
+                "http://localhost:3000"  // React dev server
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
