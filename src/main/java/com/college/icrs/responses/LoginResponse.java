@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 public class LoginResponse {
     private String token;      // JWT token
     private long expiresIn;// Token expiration time (ms)
-    private String role;      // 👈 IMPORTANT
+    private String role;
     private String username;  // optional but useful
     private String email;
 }

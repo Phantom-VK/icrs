@@ -30,9 +30,7 @@ public class AuthenticationService {
     private final EmailService emailService;
     private final JwtService jwtService;
 
-    /**
-     * ✅ Register a new user and send verification email
-     */
+    /** Register a new user and send verification email */
     public User signup(RegisterUserDto input) {
         if (userRepository.findByEmail(input.getEmail()).isPresent()) {
             throw new RuntimeException("User with email " + input.getEmail() + " already exists.");
@@ -40,12 +38,11 @@ public class AuthenticationService {
 
         User user = new User();
 
-        // ✅ Correct mapping
         user.setUsername(input.getUsername()); // full name (display)
         user.setEmail(input.getEmail()); // login identity
         user.setPassword(passwordEncoder.encode(input.getPassword()));
         user.setDepartment(input.getDepartment());
-        user.setStudentId(input.getStudentId()); // ✅ previously missing
+        user.setStudentId(input.getStudentId());
         user.setRole(Role.STUDENT);
         user.setEnabled(false); // must verify before login
         user.setVerificationCode(generateVerificationCode());
@@ -58,9 +55,7 @@ public class AuthenticationService {
         return user;
     }
 
-    /**
-     * ✅ Login with email and password, returns JWT token + expiry
-     */
+    /** Login with email and password, returns JWT token + expiry */
     public LoginResponse login(LoginUserDto input) {
         // Verify user exists
         User user = userRepository.findByEmail(input.getEmail())
@@ -74,21 +69,18 @@ public class AuthenticationService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(input.getEmail(), input.getPassword()));
 
-        // ✅ Generate JWT token with email as subject
         String jwtToken = jwtService.generateToken(user);
 
         return new LoginResponse(
                 jwtToken,
                 jwtService.getExpirationTime(),
-                user.getRole().name(), // 👈 send FACULTY or STUDENT
+                user.getRole().name(),
                 user.getUsername(),
                 user.getEmail());
 
     }
 
-    /**
-     * ✅ Verify user using email + verification code
-     */
+    /** Verify user using email + verification code */
     public void verifyUser(VerifyUserDto input) {
         User user = userRepository.findByEmail(input.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -108,9 +100,7 @@ public class AuthenticationService {
         userRepository.save(user);
     }
 
-    /**
-     * ✅ Resend verification code for unverified accounts
-     */
+    /** Resend verification code for unverified accounts */
     public void resendVerificationCode(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -126,9 +116,7 @@ public class AuthenticationService {
         sendVerificationEmail(user);
     }
 
-    /**
-     * ✅ Send verification email
-     */
+    /** Send verification email */
     private void sendVerificationEmail(User user) {
         String subject = "ICRS Account Verification Code";
         String html = "<h2>Welcome to ICRS</h2>"
@@ -142,17 +130,13 @@ public class AuthenticationService {
         }
     }
 
-    /**
-     * ✅ Generate a secure random 6-digit code
-     */
+    /** Generate a secure random 6-digit code */
     private String generateVerificationCode() {
         int code = new Random().nextInt(900000) + 100000; // 100000–999999
         return String.valueOf(code);
     }
 
-    /**
-     * ✅ Retrieve the authenticated user from the SecurityContext
-     */
+    /** Retrieve the authenticated user from the SecurityContext */
     public User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

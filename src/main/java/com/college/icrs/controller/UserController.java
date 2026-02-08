@@ -4,14 +4,15 @@ import com.college.icrs.model.User;
 import com.college.icrs.service.UserService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/users") // ✅ Plain root-level path — no /api prefix
-@CrossOrigin(origins = "http://localhost:3000") // ✅ Allow frontend during development
+@RequestMapping("/users")
+@CrossOrigin(origins = "http://localhost:3000")
 public class UserController {
 
     private final UserService userService;
@@ -25,10 +26,9 @@ public class UserController {
         System.out.println("🗺️ UserController active: /users/me, /users/test, /users");
     }
 
-    /**
-     * ✅ Returns details of the authenticated user (derived from JWT email)
-     */
+    /** Returns details of the authenticated user (derived from JWT email) */
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<User> getAuthenticatedUser(Authentication authentication) {
         System.out.println("🟢 /users/me endpoint hit");
 
@@ -46,7 +46,6 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
 
-        // ✅ Sanitize sensitive fields before returning
         currentUser.setPassword(null);
         currentUser.setVerificationCode(null);
         currentUser.setVerificationCodeExpiresAt(null);
@@ -55,10 +54,9 @@ public class UserController {
         return ResponseEntity.ok(currentUser);
     }
 
-    /**
-     * ✅ Returns all users (intended for admin use only)
-     */
+    /** Returns all users (intended for admin use only) */
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','FACULTY')")
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.allUsers();
         users.forEach(u -> {
@@ -69,9 +67,7 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-    /**
-     * ✅ Test route for connectivity verification
-     */
+    /** Test route for connectivity verification */
     @GetMapping("/test")
     public String testRoute() {
         System.out.println("🧩 /users/test route hit successfully");

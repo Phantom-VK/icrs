@@ -14,12 +14,13 @@ import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/grievances") // ✅ unified API prefix
+@RequestMapping("/grievances")
 @Validated
 public class GrievanceController {
 
@@ -39,6 +40,7 @@ public class GrievanceController {
      * ✅ Create a new grievance (Student submission)
      */
     @PostMapping
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<GrievanceResponseDTO> createGrievance(
             @Valid @RequestBody GrievanceRequestDTO grievanceDTO,
             Authentication authentication) {
@@ -66,6 +68,7 @@ public class GrievanceController {
      * ✅ Get all grievances (Faculty/Admin)
      */
     @GetMapping
+    @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<Page<GrievanceResponseDTO>> getAllGrievances(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -84,6 +87,7 @@ public class GrievanceController {
      * ✅ Get specific grievance by ID
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<GrievanceResponseDTO> getGrievanceById(@PathVariable Long id) {
         Grievance grievance = grievanceService.getGrievanceById(id);
         return ResponseEntity.ok(grievanceMapper.toDTO(grievance));
@@ -93,6 +97,7 @@ public class GrievanceController {
      * ✅ Update grievance (Faculty/Admin)
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<GrievanceResponseDTO> updateGrievance(
             @PathVariable Long id,
             @Valid @RequestBody GrievanceRequestDTO grievanceDTO) {
@@ -106,6 +111,7 @@ public class GrievanceController {
      * ✅ Delete grievance (Admin only)
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteGrievance(@PathVariable Long id) {
         grievanceService.deleteGrievance(id);
         return ResponseEntity.noContent().build();
@@ -115,6 +121,7 @@ public class GrievanceController {
      * ✅ Get grievances for a specific student (legacy)
      */
     @GetMapping("/student/{studentId}")
+    @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<List<GrievanceResponseDTO>> getGrievancesByStudent(@PathVariable Long studentId) {
         List<Grievance> grievances = grievanceService.getGrievancesByStudent(studentId);
         List<GrievanceResponseDTO> dtoList = grievances.stream()
@@ -127,6 +134,7 @@ public class GrievanceController {
      * ✅ Get grievances for the logged-in student (via JWT)
      */
     @GetMapping("/student/me")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<GrievanceResponseDTO>> getMyGrievances(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -151,6 +159,7 @@ public class GrievanceController {
      * ✅ Get grievances filtered by status (Faculty/Admin)
      */
     @GetMapping("/status/{status}")
+    @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<Page<GrievanceResponseDTO>> getGrievancesByStatus(
             @PathVariable Status status,
             @RequestParam(defaultValue = "0") int page,
@@ -165,6 +174,7 @@ public class GrievanceController {
      * ✅ Assign grievance to a faculty member
      */
     @PatchMapping("/{id}/assign")
+    @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<GrievanceResponseDTO> assignGrievance(
             @PathVariable Long id,
             @RequestParam Long facultyId) {
@@ -177,6 +187,7 @@ public class GrievanceController {
      * ✅ Update grievance status
      */
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<GrievanceResponseDTO> updateStatus(
             @PathVariable Long id,
             @RequestParam Status status) {
@@ -189,6 +200,7 @@ public class GrievanceController {
      * ✅ Get grievance statistics
      */
     @GetMapping("/statistics")
+    @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<Map<String, Long>> getStatistics() {
         return ResponseEntity.ok(grievanceService.getGrievanceStatistics());
     }

@@ -26,7 +26,6 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
-    // ✅ Public (non-authenticated) routes — no filtering
     private static final List<String> EXCLUDED_PATHS = List.of(
             "/auth/signup",
             "/auth/login",
@@ -45,9 +44,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         this.userDetailsService = userDetailsService;
     }
 
-    /**
-     * ✅ Skip JWT filtering for public endpoints
-     */
+    /** Skip JWT filtering for public endpoints */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
@@ -55,9 +52,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         return EXCLUDED_PATHS.stream().anyMatch(path::startsWith);
     }
 
-    /**
-     * ✅ JWT validation logic
-     */
+    /** JWT validation logic */
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
@@ -83,10 +78,9 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    // ✅ Build authentication token
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(
-                                    userDetails,
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
                                     null,
                                     userDetails.getAuthorities()
                             );
@@ -96,11 +90,9 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
 
-            // Proceed with chain
             filterChain.doFilter(request, response);
 
         } catch (Exception e) {
-            // ✅ Centralized exception handling (no raw stack traces)
             handlerExceptionResolver.resolveException(request, response, null, e);
         }
     }

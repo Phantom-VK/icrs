@@ -18,7 +18,6 @@ public class UserService implements UserDetailsService {
         this.userRepository = userRepository;
     }
 
-    // ✅ This now matches JWT subject (email)
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return userRepository.findByEmail(email)

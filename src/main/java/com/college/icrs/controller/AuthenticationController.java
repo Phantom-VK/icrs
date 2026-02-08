@@ -17,20 +17,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/auth") // ✅ Plain route — no "/api"
-@CrossOrigin(origins = "http://localhost:3000") // ✅ Allow frontend during dev
+@RequestMapping("/auth")
+@CrossOrigin(origins = "http://localhost:3000")
 @RequiredArgsConstructor
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
-    // ✅ Signup
+    // Signup
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody RegisterUserDto registerUserDto) {
         try {
             User user = authenticationService.signup(registerUserDto);
 
-            // 🔥 Create safe response (shows verification code ONLY during signup)
+            // Create safe response (shows verification code only during signup)
             Map<String, Object> response = new HashMap<>();
             response.put("id", user.getId());
             response.put("email", user.getEmail());
@@ -39,7 +39,6 @@ public class AuthenticationController {
             response.put("studentId", user.getStudentId());
             response.put("enabled", user.isEnabled());
 
-            // 👇 The important part
             response.put("verificationCode", user.getVerificationCode());
             response.put("verificationCodeExpiresAt", user.getVerificationCodeExpiresAt());
 
@@ -50,7 +49,7 @@ public class AuthenticationController {
         }
     }
 
-    // ✅ Login
+    // Login
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginUserDto loginUserDto) {
         try {
@@ -59,7 +58,6 @@ public class AuthenticationController {
             return ResponseEntity.ok(response);
 
         } catch (RuntimeException e) {
-            // ❌ Error response must ALSO satisfy the 5-argument LoginResponse constructor
             LoginResponse errorResponse = new LoginResponse(
                     null, // token
                     0, // expiresIn
@@ -72,7 +70,7 @@ public class AuthenticationController {
         }
     }
 
-    // ✅ Verify account
+    // Verify account
     @PostMapping("/verify")
     public ResponseEntity<String> verifyUser(@RequestBody VerifyUserDto verifyUserDto) {
         try {
@@ -83,7 +81,7 @@ public class AuthenticationController {
         }
     }
 
-    // ✅ Resend verification code
+    // Resend verification code
     @PostMapping("/resend")
     public ResponseEntity<String> resendVerificationCode(@RequestParam String email) {
         try {

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
@@ -24,12 +25,10 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    // 👇 Full name (used for display only, not authentication)
     @JsonIgnore // hide this field itself; expose through getDisplayName() instead
     @Column(nullable = false)
     private String username;
 
-    // 👇 Login identity
     @Column(unique = true, nullable = false)
     private String email;
 
@@ -59,25 +58,24 @@ public class User implements UserDetails {
         this.password = password;
     }
 
-    // ✅ Custom getter for frontend JSON serialization
+    // Custom getter for frontend JSON serialization
     // Jackson will serialize this as "username" in the response
     @JsonProperty("username")
     public String getDisplayName() {
         return this.username;
     }
 
-    // ✅ Spring Security uses this for authentication (email-based)
     @Override
     @JsonIgnore
     public String getUsername() {
         return this.email;
     }
 
-    // ✅ Security framework methods
     @Override
     @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        // Expose ROLE_* authority for Spring Security checks
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
