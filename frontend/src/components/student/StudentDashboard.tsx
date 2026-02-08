@@ -32,7 +32,6 @@ const StudentDashboard: React.FC = () => {
       }
 
       try {
-        // ✅ 1. Fetch logged-in user info
         const currentUser = await authService.getCurrentUser();
         if (!currentUser?.email) {
           console.error("❌ Invalid user session:", currentUser);
@@ -42,7 +41,6 @@ const StudentDashboard: React.FC = () => {
         console.log("✅ Logged in as:", currentUser.email);
         setUser(currentUser);
 
-        // ✅ 2. Fetch grievances via JWT-based route
         const grievancesData = await grievanceService.getMyGrievances();
         console.log(`✅ Loaded ${grievancesData.length} grievances.`);
         setGrievances(grievancesData || []);
@@ -116,7 +114,7 @@ const StudentDashboard: React.FC = () => {
 
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "30px" }}>
-          <img src={logo} alt="College Logo" style={{ width: "700px", marginBottom: "10px" }} />
+          <img src={logo} alt="College Logo" style={{ width: "260px", maxWidth: "80%", marginBottom: "10px" }} />
           <h2 style={{ color: "#000" }}>SGGS COLLEGE REDRESSAL SYSTEM</h2>
           {user && <p>Welcome, {user.email}</p>}
         </div>

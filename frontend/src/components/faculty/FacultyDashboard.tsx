@@ -36,7 +36,6 @@ const FacultyDashboard: React.FC = () => {
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  // ✅ Load all grievances
   useEffect(() => {
     const fetchGrievances = async () => {
       try {
@@ -85,7 +84,7 @@ const FacultyDashboard: React.FC = () => {
     (g) =>
       g.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       g.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      g.registrationNumber.toLowerCase().includes(searchTerm.toLowerCase())
+      (g.registrationNumber || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const statusColors: Record<string, string> = {
@@ -100,7 +99,6 @@ const FacultyDashboard: React.FC = () => {
     navigate("/auth/login");
   };
 
-  // ✅ Dashboard counts
   const totalCount = grievances.length;
   const submittedCount = grievances.filter((g) => g.status === "SUBMITTED").length;
   const inProgressCount = grievances.filter((g) => g.status === "IN_PROGRESS").length;
@@ -131,7 +129,7 @@ const FacultyDashboard: React.FC = () => {
 
         {/* Header */}
         <Box textAlign="center" mb={3}>
-          <img src={logo} alt="College Logo" style={{ width: "700px", marginBottom: "10px" }} />
+          <img src={logo} alt="College Logo" style={{ width: "260px", maxWidth: "80%", marginBottom: "10px" }} />
           <Typography variant="h6" fontWeight="bold">
             Faculty Dashboard
           </Typography>
@@ -235,7 +233,6 @@ const FacultyDashboard: React.FC = () => {
   );
 };
 
-// ✅ Summary card component
 const SummaryCard = ({
   label,
   value,

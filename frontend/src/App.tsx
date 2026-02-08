@@ -10,7 +10,7 @@ import SubmitGrievance from "./components/student/SubmitGrievance";
 import TrackGrievance from "./components/student/TrackGrievance";
 
 import FacultyDashboard from "./components/faculty/FacultyDashboard";
-import ProtectedRoute from "./components/ProtectedRoute"; // ✅ make sure this path is correct
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (

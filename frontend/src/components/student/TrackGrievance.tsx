@@ -23,7 +23,6 @@ const TrackGrievance: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // ✅ Fetch grievances directly via JWT
   useEffect(() => {
     const fetchGrievances = async () => {
       try {
@@ -41,7 +40,6 @@ const TrackGrievance: React.FC = () => {
     fetchGrievances();
   }, []);
 
-  // ✅ Filter logic
   const filteredGrievances = grievances.filter((g) => {
     const matchesSearch =
       g.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -1,11 +1,11 @@
 import axios from "axios";
 
-// ✅ Centralized backend base URL
+// Centralized backend base URL
 // No "/api" prefix since your Spring Boot routes are plain like "/auth/*", "/users/*", etc.
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
-// ✅ Create the Axios instance
+// Create the Axios instance
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -13,7 +13,7 @@ const apiClient = axios.create({
   },
 });
 
-// ✅ Automatically attach JWT token if present
+// Automatically attach JWT token if present
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token && config.headers) {
@@ -22,7 +22,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// ✅ Global error interceptor
+// Global error interceptor
 // Handles expired tokens and backend 401s gracefully
 apiClient.interceptors.response.use(
   (response) => response,

@@ -39,8 +39,10 @@ const authService = {
       if (!token) throw new Error("Invalid login response from server.");
 
       // Store token + expiry
+      const fallbackExpiry = 60 * 60 * 1000; // 1h
+      const expiryMs = typeof expiresIn === "number" && expiresIn > 0 ? expiresIn : fallbackExpiry;
       localStorage.setItem("token", token);
-      localStorage.setItem("tokenExpiry", String(Date.now() + expiresIn * 1000));
+      localStorage.setItem("tokenExpiry", String(Date.now() + expiryMs));
 
       console.log("🔹 Token stored successfully:", token);
       return response.data;

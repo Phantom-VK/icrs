@@ -105,7 +105,7 @@ const handleLogin = async () => {
           <img
             src={logo}
             alt="College Logo"
-            style={{ width: "400px", marginBottom: "8px" }}
+            style={{ width: "220px", maxWidth: "80%", marginBottom: "8px" }}
           />
           <Typography variant="h6" fontWeight="bold">
             SGGS COLLEGE REDRESSAL SYSTEM

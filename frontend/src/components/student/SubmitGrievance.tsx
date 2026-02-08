@@ -57,7 +57,6 @@ const SubmitGrievance: React.FC = () => {
 
       console.log("📤 Submitting grievance payload:", payload);
 
-      // ✅ Ensures this calls only `/api/grievances` (not /api/api/grievances)
       const response = await grievanceService.submit(payload);
       console.log("✅ Backend response:", response);
 
@@ -67,12 +66,10 @@ const SubmitGrievance: React.FC = () => {
       setDescription("");
       setRegistrationNumber("");
 
-      // ✅ Redirect after short delay
       setTimeout(() => navigate("/auth/student-dashboard"), 2000);
     } catch (err: any) {
       console.error("❌ Submission failed:", err);
 
-      // ✅ Safe error extraction to prevent React crashes
       if (err?.response) {
         const res = err.response;
         const message =
@@ -117,7 +114,7 @@ const SubmitGrievance: React.FC = () => {
           <img
             src={logo}
             alt="College Logo"
-            style={{ width: "600px", height: "auto" }}
+            style={{ width: "220px", maxWidth: "80%", height: "auto" }}
           />
           <Typography variant="h6" fontWeight="bold">
             SGGS COLLEGE REDRESSAL SYSTEM
