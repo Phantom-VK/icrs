@@ -1,7 +1,7 @@
 plugins {
-	java
-	id("org.springframework.boot") version "3.5.5"
-	id("io.spring.dependency-management") version "1.1.7"
+    java
+    id("org.springframework.boot") version "3.5.10"
+    id("io.spring.dependency-management") version "1.1.7"
 }
 
 group = "com.college"
@@ -9,16 +9,16 @@ version = "0.0.1-SNAPSHOT"
 description = "College Grievance Redressal System backend"
 
 java {
-	//toolchain {
-		//languageVersion = JavaLanguageVersion.of(21)
-	//}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
 }
 
 repositories {
 	mavenCentral()
 }
 
-extra["springAiVersion"] = "1.0.1"
+extra["springAiVersion"] = "1.1.0"
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -31,7 +31,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.40")
 	implementation("org.springframework.ai:spring-ai-starter-model-postgresml-embedding")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
-	runtimeOnly("org.postgresql:postgresql")
+	runtimeOnly("org.postgresql:postgresql:42.7.9")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
