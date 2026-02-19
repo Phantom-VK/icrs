@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, String>> handleRuntime(RuntimeException ex) {
-        Map<String, String> payload = Map.of(\"message\", ex.getMessage());
+        Map<String, String> payload = Map.of("message", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(payload);
     }
 }
