@@ -16,7 +16,7 @@ public interface GrievanceRepository extends JpaRepository<Grievance, Long> {
 
     Page<Grievance> findByStatus(Status status, Pageable pageable);
 
-    List<Grievance> findByCategoryAndStatus(String category, Status status);
+    List<Grievance> findByCategoryIdAndStatus(Long categoryId, Status status);
 
     List<Grievance> findByAssignedToId(Long facultyId);
 

@@ -52,7 +52,6 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         return EXCLUDED_PATHS.stream().anyMatch(path::startsWith);
     }
 
-    /** JWT validation logic */
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
@@ -63,7 +62,6 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            // No token → skip to next filter (may hit permitted route)
             filterChain.doFilter(request, response);
             return;
         }

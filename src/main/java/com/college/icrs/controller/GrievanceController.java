@@ -5,7 +5,11 @@ import com.college.icrs.dto.GrievanceResponseDTO;
 import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Status;
 import com.college.icrs.model.User;
+import com.college.icrs.model.Category;
+import com.college.icrs.model.Subcategory;
 import com.college.icrs.repository.UserRepository;
+import com.college.icrs.repository.CategoryRepository;
+import com.college.icrs.repository.SubcategoryRepository;
 import com.college.icrs.service.GrievanceService;
 import com.college.icrs.utils.GrievanceMapper;
 import jakarta.validation.Valid;
@@ -27,13 +31,19 @@ public class GrievanceController {
     private final GrievanceService grievanceService;
     private final GrievanceMapper grievanceMapper;
     private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
+    private final SubcategoryRepository subcategoryRepository;
 
     public GrievanceController(GrievanceService grievanceService,
                                GrievanceMapper grievanceMapper,
-                               UserRepository userRepository) {
+                               UserRepository userRepository,
+                               CategoryRepository categoryRepository,
+                               SubcategoryRepository subcategoryRepository) {
         this.grievanceService = grievanceService;
         this.grievanceMapper = grievanceMapper;
         this.userRepository = userRepository;
+        this.categoryRepository = categoryRepository;
+        this.subcategoryRepository = subcategoryRepository;
     }
 
     /** Create a new grievance (Student submission) */
@@ -55,6 +65,7 @@ public class GrievanceController {
                 .orElseThrow(() -> new RuntimeException("User not found for email: " + email));
 
         Grievance grievance = grievanceMapper.toEntity(grievanceDTO);
+        applyCategorySelections(grievanceDTO, grievance);
         Grievance createdGrievance = grievanceService.createGrievance(grievance, user.getId());
 
         System.out.println("Grievance created with ID: " + createdGrievance.getId());
@@ -95,6 +106,7 @@ public class GrievanceController {
             @Valid @RequestBody GrievanceRequestDTO grievanceDTO) {
 
         Grievance grievance = grievanceMapper.toEntity(grievanceDTO);
+        applyCategorySelections(grievanceDTO, grievance);
         Grievance updated = grievanceService.updateGrievance(id, grievance);
         return ResponseEntity.ok(grievanceMapper.toDTO(updated));
     }
@@ -181,5 +193,25 @@ public class GrievanceController {
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<Map<String, Long>> getStatistics() {
         return ResponseEntity.ok(grievanceService.getGrievanceStatistics());
+    }
+
+    private void applyCategorySelections(GrievanceRequestDTO grievanceDTO, Grievance grievance) {
+        if (grievanceDTO.getCategoryId() != null) {
+            Category category = categoryRepository.findById(grievanceDTO.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found"));
+            grievance.setCategory(category);
+        } else if (grievanceDTO.getCategory() != null) {
+            categoryRepository.findByNameIgnoreCase(grievanceDTO.getCategory())
+                    .ifPresent(grievance::setCategory);
+        }
+
+        if (grievanceDTO.getSubcategoryId() != null) {
+            Subcategory subcategory = subcategoryRepository.findById(grievanceDTO.getSubcategoryId())
+                    .orElseThrow(() -> new RuntimeException("Subcategory not found"));
+            grievance.setSubcategory(subcategory);
+        } else if (grievanceDTO.getSubcategory() != null && grievance.getCategory() != null) {
+            subcategoryRepository.findByNameIgnoreCaseAndCategoryId(grievanceDTO.getSubcategory(), grievance.getCategory().getId())
+                    .ifPresent(grievance::setSubcategory);
+        }
     }
 }

@@ -2,8 +2,10 @@ package com.college.icrs.service;
 
 import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Status;
+import com.college.icrs.model.StatusHistory;
 import com.college.icrs.model.User;
 import com.college.icrs.repository.GrievanceRepository;
+import com.college.icrs.repository.StatusHistoryRepository;
 import com.college.icrs.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
@@ -20,10 +22,14 @@ public class GrievanceService {
 
     private final GrievanceRepository grievanceRepository;
     private final UserRepository userRepository;
+    private final StatusHistoryRepository statusHistoryRepository;
 
-    public GrievanceService(GrievanceRepository grievanceRepository, UserRepository userRepository) {
+    public GrievanceService(GrievanceRepository grievanceRepository,
+                            UserRepository userRepository,
+                            StatusHistoryRepository statusHistoryRepository) {
         this.grievanceRepository = grievanceRepository;
         this.userRepository = userRepository;
+        this.statusHistoryRepository = statusHistoryRepository;
     }
 
     public Grievance createGrievance(Grievance grievance, Long studentId) {
@@ -32,7 +38,15 @@ public class GrievanceService {
 
         grievance.setStudent(student);
         grievance.setStatus(Status.SUBMITTED);
-       
+
+        // auto-assign to default assignee if present on subcategory or category
+        if (grievance.getAssignedTo() == null && grievance.getSubcategory() != null && grievance.getSubcategory().getDefaultAssignee() != null) {
+            grievance.setAssignedTo(grievance.getSubcategory().getDefaultAssignee());
+            grievance.setStatus(Status.IN_PROGRESS);
+        } else if (grievance.getAssignedTo() == null && grievance.getCategory() != null && grievance.getCategory().getDefaultAssignee() != null) {
+            grievance.setAssignedTo(grievance.getCategory().getDefaultAssignee());
+            grievance.setStatus(Status.IN_PROGRESS);
+        }
 
         Grievance saved = grievanceRepository.save(grievance);
         System.out.println("Grievance created for student ID " + studentId + " | Grievance ID: " + saved.getId());
@@ -82,8 +96,8 @@ public class GrievanceService {
         return grievanceRepository.findByStatus(status, pageable);
     }
 
-    public List<Grievance> getGrievancesByCategoryAndStatus(String category, Status status) {
-        return grievanceRepository.findByCategoryAndStatus(category, status);
+    public List<Grievance> getGrievancesByCategoryAndStatus(Long categoryId, Status status) {
+        return grievanceRepository.findByCategoryIdAndStatus(categoryId, status);
     }
 
     public List<Grievance> getGrievancesByFaculty(Long facultyId) {
@@ -102,8 +116,17 @@ public class GrievanceService {
 
     public Grievance updateGrievanceStatus(Long grievanceId, Status status) {
         Grievance grievance = getGrievanceById(grievanceId);
+        Status fromStatus = grievance.getStatus();
         grievance.setStatus(status);
-        return grievanceRepository.save(grievance);
+        Grievance saved = grievanceRepository.save(grievance);
+
+        StatusHistory history = new StatusHistory();
+        history.setGrievance(saved);
+        history.setFromStatus(fromStatus);
+        history.setToStatus(status);
+        statusHistoryRepository.save(history);
+
+        return saved;
     }
 
     public Grievance resolveGrievance(Long grievanceId) {

@@ -9,6 +9,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "grievances")
@@ -30,8 +32,14 @@ public class Grievance {
 
     @NonNull
     private String description;
-    private String category;
-    private String subcategory;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subcategory_id")
+    private Subcategory subcategory;
 
     @Column(name = "registration_number")
     private String registrationNumber;
@@ -48,5 +56,14 @@ public class Grievance {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "grievance", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Attachment> attachments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "grievance", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "grievance", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StatusHistory> statusHistory = new ArrayList<>();
 
 }

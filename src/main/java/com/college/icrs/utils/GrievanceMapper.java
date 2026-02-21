@@ -20,8 +20,6 @@ public class GrievanceMapper {
         Grievance grievance = new Grievance();
         grievance.setTitle(dto.getTitle());
         grievance.setDescription(dto.getDescription());
-        grievance.setCategory(dto.getCategory());
-        grievance.setSubcategory(dto.getSubcategory());
         grievance.setRegistrationNumber(dto.getRegistrationNumber());
         return grievance;
     }
@@ -35,8 +33,16 @@ public class GrievanceMapper {
         dto.setId(grievance.getId());
         dto.setTitle(grievance.getTitle());
         dto.setDescription(grievance.getDescription());
-        dto.setCategory(grievance.getCategory());
-        dto.setSubcategory(grievance.getSubcategory());
+        if (grievance.getCategory() != null) {
+            dto.setCategoryId(grievance.getCategory().getId());
+            dto.setCategoryName(grievance.getCategory().getName());
+            dto.setCategory(grievance.getCategory().getName());
+        }
+        if (grievance.getSubcategory() != null) {
+            dto.setSubcategoryId(grievance.getSubcategory().getId());
+            dto.setSubcategoryName(grievance.getSubcategory().getName());
+            dto.setSubcategory(grievance.getSubcategory().getName());
+        }
         dto.setStatus(grievance.getStatus());
         dto.setRegistrationNumber(grievance.getRegistrationNumber());
         // Map user names
@@ -70,7 +76,5 @@ public class GrievanceMapper {
 
         grievance.setTitle(dto.getTitle());
         grievance.setDescription(dto.getDescription());
-        grievance.setCategory(dto.getCategory());
-        grievance.setSubcategory(dto.getSubcategory());
     }
 }

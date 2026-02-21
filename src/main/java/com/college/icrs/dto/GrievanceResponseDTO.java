@@ -13,8 +13,12 @@ public class GrievanceResponseDTO {
     private long id;
     private String title;
     private  String description;
-    private  String category;
-    private  String subcategory;
+    private Long categoryId;
+    private String categoryName;
+    private String category;
+    private Long subcategoryId;
+    private String subcategoryName;
+    private String subcategory;
     private String registrationNumber;
     private Status status;
     private String studentName;

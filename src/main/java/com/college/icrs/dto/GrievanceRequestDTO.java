@@ -15,10 +15,9 @@ public class GrievanceRequestDTO {
     @NotBlank(message = "Description is required")
     private String description;
 
-    @NotBlank(message = "Category is required")
+    private Long categoryId;
+    private Long subcategoryId;
     private String category;
-
-    @NotBlank(message = "Sub-Category is required")
     private String subcategory;
 
     private String registrationNumber;
