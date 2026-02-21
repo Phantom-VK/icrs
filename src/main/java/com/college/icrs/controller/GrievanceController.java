@@ -36,9 +36,7 @@ public class GrievanceController {
         this.userRepository = userRepository;
     }
 
-    /**
-     * ✅ Create a new grievance (Student submission)
-     */
+    /** Create a new grievance (Student submission) */
     @PostMapping
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<GrievanceResponseDTO> createGrievance(
@@ -51,7 +49,7 @@ public class GrievanceController {
         }
 
         String email = authentication.getName();
-        System.out.println("📩 Grievance submitted by: " + email);
+        System.out.println("Grievance submitted by: " + email);
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found for email: " + email));
@@ -59,14 +57,12 @@ public class GrievanceController {
         Grievance grievance = grievanceMapper.toEntity(grievanceDTO);
         Grievance createdGrievance = grievanceService.createGrievance(grievance, user.getId());
 
-        System.out.println("✅ Grievance created with ID: " + createdGrievance.getId());
+        System.out.println("Grievance created with ID: " + createdGrievance.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(grievanceMapper.toDTO(createdGrievance));
     }
 
-    /**
-     * ✅ Get all grievances (Faculty/Admin)
-     */
+    /** Get all grievances (Faculty/Admin) */
     @GetMapping
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<Page<GrievanceResponseDTO>> getAllGrievances(
@@ -83,9 +79,7 @@ public class GrievanceController {
         return ResponseEntity.ok(grievances.map(grievanceMapper::toDTO));
     }
 
-    /**
-     * ✅ Get specific grievance by ID
-     */
+    /** Get specific grievance by ID */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<GrievanceResponseDTO> getGrievanceById(@PathVariable Long id) {
@@ -93,9 +87,7 @@ public class GrievanceController {
         return ResponseEntity.ok(grievanceMapper.toDTO(grievance));
     }
 
-    /**
-     * ✅ Update grievance (Faculty/Admin)
-     */
+    /** Update grievance (Faculty/Admin) */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<GrievanceResponseDTO> updateGrievance(
@@ -107,9 +99,7 @@ public class GrievanceController {
         return ResponseEntity.ok(grievanceMapper.toDTO(updated));
     }
 
-    /**
-     * ✅ Delete grievance (Admin only)
-     */
+    /** Delete grievance (Admin only) */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteGrievance(@PathVariable Long id) {
@@ -117,9 +107,7 @@ public class GrievanceController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * ✅ Get grievances for a specific student (legacy)
-     */
+    /** Get grievances for a specific student (legacy) */
     @GetMapping("/student/{studentId}")
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<List<GrievanceResponseDTO>> getGrievancesByStudent(@PathVariable Long studentId) {
@@ -130,9 +118,7 @@ public class GrievanceController {
         return ResponseEntity.ok(dtoList);
     }
 
-    /**
-     * ✅ Get grievances for the logged-in student (via JWT)
-     */
+    /** Get grievances for the logged-in student (via JWT) */
     @GetMapping("/student/me")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<GrievanceResponseDTO>> getMyGrievances(Authentication authentication) {
@@ -141,7 +127,7 @@ public class GrievanceController {
         }
 
         String email = authentication.getName();
-        System.out.println("🎓 Fetching grievances for student: " + email);
+        System.out.println("Fetching grievances for student: " + email);
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found for email: " + email));
@@ -151,13 +137,11 @@ public class GrievanceController {
                 .map(grievanceMapper::toDTO)
                 .collect(Collectors.toList());
 
-        System.out.println("📄 Found " + grievances.size() + " grievances for " + email);
+        System.out.println("Found " + grievances.size() + " grievances for " + email);
         return ResponseEntity.ok(dtoList);
     }
 
-    /**
-     * ✅ Get grievances filtered by status (Faculty/Admin)
-     */
+    /** Get grievances filtered by status (Faculty/Admin) */
     @GetMapping("/status/{status}")
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<Page<GrievanceResponseDTO>> getGrievancesByStatus(
@@ -170,9 +154,7 @@ public class GrievanceController {
         return ResponseEntity.ok(grievances.map(grievanceMapper::toDTO));
     }
 
-    /**
-     * ✅ Assign grievance to a faculty member
-     */
+    /** Assign grievance to a faculty member */
     @PatchMapping("/{id}/assign")
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<GrievanceResponseDTO> assignGrievance(
@@ -183,9 +165,7 @@ public class GrievanceController {
         return ResponseEntity.ok(grievanceMapper.toDTO(updated));
     }
 
-    /**
-     * ✅ Update grievance status
-     */
+    /** Update grievance status */
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<GrievanceResponseDTO> updateStatus(
@@ -196,9 +176,7 @@ public class GrievanceController {
         return ResponseEntity.ok(grievanceMapper.toDTO(updated));
     }
 
-    /**
-     * ✅ Get grievance statistics
-     */
+    /** Get grievance statistics */
     @GetMapping("/statistics")
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<Map<String, Long>> getStatistics() {

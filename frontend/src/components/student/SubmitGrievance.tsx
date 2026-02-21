@@ -41,9 +41,9 @@ const SubmitGrievance: React.FC = () => {
       let user = null;
       try {
         user = await authService.getCurrentUser();
-        console.log("✅ Logged-in user:", user?.email || "Unknown user");
+        console.log("Logged-in user:", user?.email || "Unknown user");
       } catch {
-        console.warn("⚠️ Could not fetch user info, proceeding anyway.");
+        console.warn("Could not fetch user info, proceeding anyway.");
       }
 
       const title = `${category}${subCategory ? ` - ${subCategory}` : ""}`;
@@ -55,10 +55,10 @@ const SubmitGrievance: React.FC = () => {
         registrationNumber,
       };
 
-      console.log("📤 Submitting grievance payload:", payload);
+      console.log("Submitting grievance payload:", payload);
 
       const response = await grievanceService.submit(payload);
-      console.log("✅ Backend response:", response);
+      console.log("Backend response:", response);
 
       setSubmitted(true);
       setCategory("");
@@ -68,7 +68,7 @@ const SubmitGrievance: React.FC = () => {
 
       setTimeout(() => navigate("/auth/student-dashboard"), 2000);
     } catch (err: any) {
-      console.error("❌ Submission failed:", err);
+      console.error("Submission failed:", err);
 
       if (err?.response) {
         const res = err.response;
@@ -124,7 +124,7 @@ const SubmitGrievance: React.FC = () => {
         {/* Alerts */}
         {submitted && (
           <Alert severity="success" sx={{ mb: 2 }}>
-            ✅ Grievance submitted successfully! Redirecting...
+            Grievance submitted successfully! Redirecting...
           </Alert>
         )}
         {error && (

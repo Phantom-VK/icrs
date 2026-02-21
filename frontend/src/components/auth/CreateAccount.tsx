@@ -29,21 +29,19 @@ const CreateAccount: React.FC = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /** ✅ Handle field updates */
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  /** ✅ Submit new account creation */
   const handleCreateAccount = async () => {
     // Basic validation
     if (!formData.username || !formData.email || !formData.password) {
-      setMessage("❌ Please fill all required fields.");
+      setMessage("Please fill all required fields.");
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setMessage("❌ Passwords do not match.");
+      setMessage("Passwords do not match.");
       return;
     }
 
@@ -59,7 +57,7 @@ const CreateAccount: React.FC = () => {
         formData.password.trim() 
       );
 
-      setMessage("✅ Account created successfully! Check your email for verification.");
+      setMessage("Account created successfully! Check your email for verification.");
       // Redirect to verification page
       setTimeout(() => navigate(`/auth/verify?email=${formData.email}`), 2000);
     } catch (error: unknown) {
@@ -70,12 +68,12 @@ const CreateAccount: React.FC = () => {
             typeof error.response.data === "string"
               ? error.response.data
               : error.response.data.message || "Signup failed.";
-          setMessage(`❌ ${backendMessage}`);
+          setMessage(backendMessage);
         } else {
-          setMessage("❌ Network error. Please try again.");
+          setMessage("Network error. Please try again.");
         }
       } else {
-        setMessage("❌ Unexpected error occurred.");
+        setMessage("Unexpected error occurred.");
       }
     } finally {
       setLoading(false);
@@ -180,7 +178,11 @@ const CreateAccount: React.FC = () => {
 
           {message && (
             <Typography
-              color={message.includes("✅") ? "success.main" : "error.main"}
+              color={
+                message.toLowerCase().includes("success")
+                  ? "success.main"
+                  : "error.main"
+              }
               textAlign="center"
               sx={{ mt: 2 }}
             >

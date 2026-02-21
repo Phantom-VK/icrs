@@ -26,12 +26,12 @@ const TrackGrievance: React.FC = () => {
   useEffect(() => {
     const fetchGrievances = async () => {
       try {
-        console.log("📥 Fetching grievances for logged-in student...");
+        console.log("Fetching grievances for logged-in student...");
         const data = await grievanceService.getMyGrievances();
         setGrievances(data || []);
-        console.log("✅ Fetched grievances:", data);
+        console.log("Fetched grievances:", data);
       } catch (err) {
-        console.error("❌ Failed to load grievances:", err);
+        console.error("Failed to load grievances:", err);
         setError("Failed to load grievances. Please try again.");
       } finally {
         setLoading(false);

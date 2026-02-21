@@ -23,26 +23,26 @@ public class UserController {
 
     @PostConstruct
     public void printRoutes() {
-        System.out.println("🗺️ UserController active: /users/me, /users/test, /users");
+        System.out.println("UserController active: /users/me, /users/test, /users");
     }
 
     /** Returns details of the authenticated user (derived from JWT email) */
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<User> getAuthenticatedUser(Authentication authentication) {
-        System.out.println("🟢 /users/me endpoint hit");
+        System.out.println("/users/me endpoint hit");
 
         if (authentication == null || authentication.getName() == null) {
-            System.out.println("⚠️ No authentication context found — unauthorized request");
+            System.out.println("No authentication context found — unauthorized request");
             return ResponseEntity.status(401).build();
         }
 
         String email = authentication.getName();
-        System.out.println("🔍 Extracted email from JWT: " + email);
+        System.out.println("Extracted email from JWT: " + email);
 
         User currentUser = userService.findByEmail(email);
         if (currentUser == null) {
-            System.out.println("⚠️ No user found for email: " + email);
+            System.out.println("No user found for email: " + email);
             return ResponseEntity.notFound().build();
         }
 
@@ -50,7 +50,7 @@ public class UserController {
         currentUser.setVerificationCode(null);
         currentUser.setVerificationCodeExpiresAt(null);
 
-        System.out.println("✅ Returning user: " + currentUser.getEmail());
+        System.out.println("Returning user: " + currentUser.getEmail());
         return ResponseEntity.ok(currentUser);
     }
 
@@ -70,7 +70,7 @@ public class UserController {
     /** Test route for connectivity verification */
     @GetMapping("/test")
     public String testRoute() {
-        System.out.println("🧩 /users/test route hit successfully");
-        return "✅ /users/test route works!";
+        System.out.println("/users/test route hit successfully");
+        return "/users/test route works!";
     }
 }

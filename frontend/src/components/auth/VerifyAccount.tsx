@@ -19,7 +19,7 @@ const VerifyAccount: React.FC = () => {
 
   const handleVerify = async () => {
     if (verificationCode.length !== 6) {
-      setMessage("❌ Please enter a valid 6-digit verification code.");
+      setMessage("Please enter a valid 6-digit verification code.");
       return;
     }
 
@@ -28,17 +28,17 @@ const VerifyAccount: React.FC = () => {
 
     try {
       const res = await authService.verify(email, verificationCode);
-      setMessage(res.message || "✅ Account verified successfully!");
+      setMessage(res.message || "Account verified successfully!");
       setTimeout(() => navigate("/auth/login"), 1500);
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         if (error.response?.data) {
-          setMessage(`❌ ${error.response.data}`);
+          setMessage(String(error.response.data));
         } else {
-          setMessage("❌ Network error. Please try again.");
+          setMessage("Network error. Please try again.");
         }
       } else {
-        setMessage("❌ Unexpected error occurred during verification.");
+        setMessage("Unexpected error occurred during verification.");
       }
     } finally {
       setLoading(false);
@@ -51,16 +51,16 @@ const VerifyAccount: React.FC = () => {
 
     try {
       const res = await authService.resend(email);
-      setMessage(res.message || "✅ Verification code resent successfully!");
+      setMessage(res.message || "Verification code resent successfully!");
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         if (error.response?.data) {
-          setMessage(`❌ ${error.response.data}`);
+          setMessage(String(error.response.data));
         } else {
-          setMessage("❌ Network error while resending code.");
+          setMessage("Network error while resending code.");
         }
       } else {
-        setMessage("❌ Unexpected error occurred while resending code.");
+        setMessage("Unexpected error occurred while resending code.");
       }
     } finally {
       setLoading(false);
@@ -125,7 +125,11 @@ const VerifyAccount: React.FC = () => {
 
           {message && (
             <Typography
-              color={message.includes("✅") ? "primary" : "error"}
+              color={
+                message.toLowerCase().includes("success")
+                  ? "primary"
+                  : "error"
+              }
               textAlign="center"
               sx={{ mt: 2 }}
             >

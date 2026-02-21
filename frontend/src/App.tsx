@@ -24,7 +24,7 @@ function App() {
         <Route path="/auth/create-account" element={<CreateAccount />} />
         <Route path="/auth/verify" element={<VerifyAccount />} />
 
-        {/* ✅ Protected Student Routes */}
+        {/* Protected Student Routes */}
         <Route
           path="/auth/student-dashboard"
           element={
@@ -50,7 +50,7 @@ function App() {
           }
         />
 
-        {/* ✅ Protected Faculty Route */}
+        {/* Protected Faculty Route */}
         <Route
           path="/faculty/dashboard"
           element={

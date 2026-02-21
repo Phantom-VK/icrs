@@ -35,13 +35,13 @@ public class GrievanceService {
        
 
         Grievance saved = grievanceRepository.save(grievance);
-        System.out.println("✅ Grievance created for student ID " + studentId + " | Grievance ID: " + saved.getId());
+        System.out.println("Grievance created for student ID " + studentId + " | Grievance ID: " + saved.getId());
         return saved;
     }
 
     public Grievance saveGrievance(Grievance grievance) {
         Grievance saved = grievanceRepository.save(grievance);
-        System.out.println("📝 Grievance saved: ID=" + saved.getId());
+        System.out.println("Grievance saved: ID=" + saved.getId());
         return saved;
     }
 
@@ -67,7 +67,7 @@ public class GrievanceService {
     public void deleteGrievance(Long id) {
         Grievance grievance = getGrievanceById(id);
         grievanceRepository.delete(grievance);
-        System.out.println("🗑️ Grievance deleted: ID=" + id);
+        System.out.println("Grievance deleted: ID=" + id);
     }
 
     public Page<Grievance> getAllGrievances(Pageable pageable) {

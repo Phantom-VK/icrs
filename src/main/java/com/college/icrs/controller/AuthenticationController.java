@@ -45,7 +45,7 @@ public class AuthenticationController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body("❌ Signup failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Signup failed: " + e.getMessage());
         }
     }
 
@@ -63,7 +63,7 @@ public class AuthenticationController {
                     0, // expiresIn
                     null, // role
                     null, // username
-                    "❌ " + e.getMessage() // email field repurposed as message
+                    e.getMessage() // email field repurposed as message
             );
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
@@ -75,9 +75,9 @@ public class AuthenticationController {
     public ResponseEntity<String> verifyUser(@RequestBody VerifyUserDto verifyUserDto) {
         try {
             authenticationService.verifyUser(verifyUserDto);
-            return ResponseEntity.ok("✅ Account verified successfully.");
+            return ResponseEntity.ok("Account verified successfully.");
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body("❌ Verification failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Verification failed: " + e.getMessage());
         }
     }
 
@@ -86,9 +86,9 @@ public class AuthenticationController {
     public ResponseEntity<String> resendVerificationCode(@RequestParam String email) {
         try {
             authenticationService.resendVerificationCode(email);
-            return ResponseEntity.ok("✅ Verification code sent successfully!");
+            return ResponseEntity.ok("Verification code sent successfully!");
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body("❌ Could not resend: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Could not resend: " + e.getMessage());
         }
     }
 }

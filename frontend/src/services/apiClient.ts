@@ -29,7 +29,7 @@ apiClient.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
     if (status === 401) {
-      console.warn("🔒 Unauthorized — clearing expired token");
+      console.warn("Unauthorized — clearing expired token");
       localStorage.removeItem("token");
       localStorage.removeItem("tokenExpiry");
 

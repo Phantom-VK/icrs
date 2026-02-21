@@ -21,10 +21,10 @@ const LoginPage: React.FC = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /** ✅ Handle login */
+  /** Handle login */
 const handleLogin = async () => {
   if (!email || !password) {
-    setMessage("❌ Please enter both email and password.");
+    setMessage("Please enter both email and password.");
     return;
   }
 
@@ -34,14 +34,12 @@ const handleLogin = async () => {
   try {
     const result = await authService.login(email.trim(), password.trim());
 
-    console.log("🔥 Raw login response:", JSON.stringify(result, null, 2));
-
     if (!result?.token) {
-      setMessage("❌ Invalid response from server.");
+      setMessage("Invalid response from server.");
       return;
     }
 
-    setMessage("✅ Login successful!");
+    setMessage("Login successful!");
 
     // Store session data
     localStorage.setItem("isLoggedIn", "true");
@@ -49,7 +47,7 @@ const handleLogin = async () => {
     localStorage.setItem("username", result.username);
     localStorage.setItem("email", result.email);
 
-    // 🚀 Redirect based on role
+    // Redirect based on role
     setTimeout(() => {
       if (result.role === "FACULTY") {
         console.log("➡ Redirecting to FACULTY dashboard");
@@ -69,9 +67,9 @@ const handleLogin = async () => {
           ? error.response.data
           : error.response?.data?.message || "Invalid credentials.";
 
-      setMessage(`❌ ${backendMessage}`);
+      setMessage(backendMessage);
     } else {
-      setMessage("❌ Unexpected error occurred.");
+      setMessage("Unexpected error occurred.");
     }
   } finally {
     setLoading(false);
@@ -163,7 +161,11 @@ const handleLogin = async () => {
 
           {message && (
             <Typography
-              color={message.includes("✅") ? "success.main" : "error.main"}
+              color={
+                message.toLowerCase().includes("success")
+                  ? "success.main"
+                  : "error.main"
+              }
               textAlign="center"
               sx={{ mt: 2 }}
             >

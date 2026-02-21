@@ -26,7 +26,7 @@ const StudentDashboard: React.FC = () => {
     const fetchData = async () => {
       const token = localStorage.getItem("token");
       if (!token) {
-        console.warn("⚠️ No token found — redirecting to login");
+        console.warn("No token found — redirecting to login");
         navigate("/auth/login");
         return;
       }
@@ -34,18 +34,18 @@ const StudentDashboard: React.FC = () => {
       try {
         const currentUser = await authService.getCurrentUser();
         if (!currentUser?.email) {
-          console.error("❌ Invalid user session:", currentUser);
+          console.error("Invalid user session:", currentUser);
           throw new Error("Invalid or expired user session.");
         }
 
-        console.log("✅ Logged in as:", currentUser.email);
+        console.log("Logged in as:", currentUser.email);
         setUser(currentUser);
 
         const grievancesData = await grievanceService.getMyGrievances();
-        console.log(`✅ Loaded ${grievancesData.length} grievances.`);
+        console.log(`Loaded ${grievancesData.length} grievances.`);
         setGrievances(grievancesData || []);
       } catch (err: any) {
-        console.error("❌ Error loading dashboard data:", err);
+        console.error("Error loading dashboard data:", err);
         setError("Failed to load grievances. Please try again later.");
       } finally {
         setLoading(false);
