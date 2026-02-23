@@ -7,6 +7,7 @@ import com.college.icrs.model.User;
 import com.college.icrs.repository.GrievanceRepository;
 import com.college.icrs.repository.StatusHistoryRepository;
 import com.college.icrs.repository.UserRepository;
+import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,13 +24,16 @@ public class GrievanceService {
     private final GrievanceRepository grievanceRepository;
     private final UserRepository userRepository;
     private final StatusHistoryRepository statusHistoryRepository;
+    private final EmailService emailService;
 
     public GrievanceService(GrievanceRepository grievanceRepository,
                             UserRepository userRepository,
-                            StatusHistoryRepository statusHistoryRepository) {
+                            StatusHistoryRepository statusHistoryRepository,
+                            EmailService emailService) {
         this.grievanceRepository = grievanceRepository;
         this.userRepository = userRepository;
         this.statusHistoryRepository = statusHistoryRepository;
+        this.emailService = emailService;
     }
 
     public Grievance createGrievance(Grievance grievance, Long studentId) {
@@ -50,6 +54,7 @@ public class GrievanceService {
 
         Grievance saved = grievanceRepository.save(grievance);
         System.out.println("Grievance created for student ID " + studentId + " | Grievance ID: " + saved.getId());
+        trySendSubmissionEmail(student, saved);
         return saved;
     }
 
@@ -111,7 +116,9 @@ public class GrievanceService {
 
         grievance.setAssignedTo(faculty);
         grievance.setStatus(Status.IN_PROGRESS);
-        return grievanceRepository.save(grievance);
+        Grievance updated = grievanceRepository.save(grievance);
+        trySendAssignmentEmail(grievance.getStudent(), faculty, updated);
+        return updated;
     }
 
     public Grievance updateGrievanceStatus(Long grievanceId, Status status) {
@@ -126,6 +133,7 @@ public class GrievanceService {
         history.setToStatus(status);
         statusHistoryRepository.save(history);
 
+        trySendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, status);
         return saved;
     }
 
@@ -149,5 +157,47 @@ public class GrievanceService {
         stats.put("inProgress", grievanceRepository.findByStatus(Status.IN_PROGRESS, Pageable.unpaged()).getTotalElements());
         stats.put("resolved", grievanceRepository.findByStatus(Status.RESOLVED, Pageable.unpaged()).getTotalElements());
         return stats;
+    }
+
+    private void trySendSubmissionEmail(User student, Grievance grievance) {
+        if (student == null) return;
+        String subject = "Grievance submitted: " + grievance.getTitle();
+        String body = """
+                <p>Dear %s,</p>
+                <p>Your grievance "<b>%s</b>" has been submitted with status <b>%s</b>.</p>
+                <p>Registration number: %s</p>
+                """.formatted(student.getUsername(), grievance.getTitle(), grievance.getStatus(), grievance.getRegistrationNumber());
+        sendEmailSafe(student.getEmail(), subject, body);
+    }
+
+    private void trySendAssignmentEmail(User student, User faculty, Grievance grievance) {
+        if (student != null) {
+            String subject = "Grievance assigned: " + grievance.getTitle();
+            String body = """
+                    <p>Dear %s,</p>
+                    <p>Your grievance "<b>%s</b>" has been assigned to <b>%s</b> and is now <b>%s</b>.</p>
+                    """.formatted(student.getUsername(), grievance.getTitle(),
+                    faculty != null ? faculty.getUsername() : "faculty", grievance.getStatus());
+            sendEmailSafe(student.getEmail(), subject, body);
+        }
+    }
+
+    private void trySendStatusChangeEmail(User student, Grievance grievance, Status from, Status to) {
+        if (student == null) return;
+        String subject = "Grievance status updated: " + grievance.getTitle();
+        String body = """
+                <p>Dear %s,</p>
+                <p>The status of your grievance "<b>%s</b>" changed from <b>%s</b> to <b>%s</b>.</p>
+                """.formatted(student.getUsername(), grievance.getTitle(), from, to);
+        sendEmailSafe(student.getEmail(), subject, body);
+    }
+
+    private void sendEmailSafe(String to, String subject, String body) {
+        try {
+            emailService.sendAsync(to, subject, body);
+        } catch (Exception e) {
+            // Do not block main flow on email failure; log to console for now.
+            System.err.println("Failed to send email to " + to + ": " + e.getMessage());
+        }
     }
 }
