@@ -1,4 +1,5 @@
 import api from "./apiClient";
+import { getErrorMessage } from "../utils/error";
 
 export interface GrievanceData {
   title: string;
@@ -17,8 +18,9 @@ const grievanceService = {
       console.log("Grievance submitted successfully:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("Failed to submit grievance:", error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || "Failed to submit grievance.");
+      const message = getErrorMessage(error, "Failed to submit grievance.");
+      console.error("Failed to submit grievance:", message);
+      throw new Error(message);
     }
   },
 
@@ -29,8 +31,9 @@ const grievanceService = {
       console.log("Grievances fetched:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("Failed to fetch student's grievances:", error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || "Unable to fetch your grievances.");
+      const message = getErrorMessage(error, "Unable to fetch your grievances.");
+      console.error("Failed to fetch student's grievances:", message);
+      throw new Error(message);
     }
   },
 
@@ -40,8 +43,9 @@ const grievanceService = {
       const response = await api.get(`/grievances/${id}`);
       return response.data;
     } catch (error: any) {
-      console.error("Failed to fetch grievance:", error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || "Grievance not found.");
+      const message = getErrorMessage(error, "Grievance not found.");
+      console.error("Failed to fetch grievance:", message);
+      throw new Error(message);
     }
   },
 
@@ -54,8 +58,9 @@ const grievanceService = {
       console.log("All grievances fetched:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("Failed to fetch grievances:", error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || "Unable to fetch grievances.");
+      const message = getErrorMessage(error, "Unable to fetch grievances.");
+      console.error("Failed to fetch grievances:", message);
+      throw new Error(message);
     }
   },
 
@@ -68,8 +73,9 @@ const grievanceService = {
       console.log("Grievance status updated:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("Failed to update grievance status:", error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || "Unable to update grievance status.");
+      const message = getErrorMessage(error, "Unable to update grievance status.");
+      console.error("Failed to update grievance status:", message);
+      throw new Error(message);
     }
   },
 };

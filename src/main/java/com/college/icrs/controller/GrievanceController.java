@@ -198,7 +198,7 @@ public class GrievanceController {
     private void applyCategorySelections(GrievanceRequestDTO grievanceDTO, Grievance grievance) {
         if (grievanceDTO.getCategoryId() != null) {
             Category category = categoryRepository.findById(grievanceDTO.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Category not found"));
+                    .orElseThrow(() -> new java.util.NoSuchElementException("Category not found"));
             grievance.setCategory(category);
         } else if (grievanceDTO.getCategory() != null) {
             categoryRepository.findByNameIgnoreCase(grievanceDTO.getCategory())
@@ -207,7 +207,7 @@ public class GrievanceController {
 
         if (grievanceDTO.getSubcategoryId() != null) {
             Subcategory subcategory = subcategoryRepository.findById(grievanceDTO.getSubcategoryId())
-                    .orElseThrow(() -> new RuntimeException("Subcategory not found"));
+                    .orElseThrow(() -> new java.util.NoSuchElementException("Subcategory not found"));
             grievance.setSubcategory(subcategory);
         } else if (grievanceDTO.getSubcategory() != null && grievance.getCategory() != null) {
             subcategoryRepository.findByNameIgnoreCaseAndCategoryId(grievanceDTO.getSubcategory(), grievance.getCategory().getId())

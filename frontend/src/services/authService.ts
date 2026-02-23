@@ -1,4 +1,5 @@
 import api from "./apiClient";
+import { getErrorMessage } from "../utils/error";
 
 const authService = {
   register: async (
@@ -21,8 +22,9 @@ const authService = {
       console.log("Registration success:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("Registration failed:", error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || "Signup failed");
+      const message = getErrorMessage(error, "Signup failed");
+      console.error("Registration failed:", message);
+      throw new Error(message);
     }
   },
 
@@ -44,8 +46,9 @@ const authService = {
       console.log("Token stored successfully:", token);
       return response.data;
     } catch (error: any) {
-      console.error("Login failed:", error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || "Invalid credentials");
+      const message = getErrorMessage(error, "Invalid credentials");
+      console.error("Login failed:", message);
+      throw new Error(message);
     }
   },
 
@@ -54,8 +57,9 @@ const authService = {
       const response = await api.post("/auth/verify", { email, verificationCode });
       return { message: response.data || "Account verified successfully." };
     } catch (error: any) {
-      console.error("Verification failed:", error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || "Verification failed");
+      const message = getErrorMessage(error, "Verification failed");
+      console.error("Verification failed:", message);
+      throw new Error(message);
     }
   },
 
@@ -64,8 +68,9 @@ const authService = {
       const response = await api.post(`/auth/resend?email=${email}`);
       return { message: response.data || "Verification code resent successfully." };
     } catch (error: any) {
-      console.error("Resend verification failed:", error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || "Failed to resend verification code");
+      const message = getErrorMessage(error, "Failed to resend verification code");
+      console.error("Resend verification failed:", message);
+      throw new Error(message);
     }
   },
 
@@ -74,8 +79,9 @@ const authService = {
       const response = await api.get("/users/me");
       return response.data;
     } catch (error: any) {
-      console.error("Failed to fetch current user:", error.response?.status || error.message);
-      throw new Error(error.response?.data?.message || "Failed to fetch user profile");
+      const message = getErrorMessage(error, "Failed to fetch user profile");
+      console.error("Failed to fetch current user:", message);
+      throw new Error(message);
     }
   },
 

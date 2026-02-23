@@ -61,7 +61,7 @@ public class GrievanceService {
 
     public Grievance getGrievanceById(Long id) {
         return grievanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Grievance not found with id: " + id));
+                .orElseThrow(() -> new java.util.NoSuchElementException("Grievance not found with id: " + id));
     }
 
     public Grievance updateGrievance(Long id, Grievance grievanceDetails) {
