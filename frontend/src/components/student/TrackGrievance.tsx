@@ -28,6 +28,27 @@ const TrackGrievance: React.FC = () => {
   const [commentLoadingMap, setCommentLoadingMap] = useState<Record<number, boolean>>({});
   const [commentErrorMap, setCommentErrorMap] = useState<Record<number, string>>({});
 
+  function loadComments(id: number) {
+    if (commentMap[id]) return;
+    setCommentLoadingMap((prev) => ({ ...prev, [id]: true }));
+    setCommentErrorMap((prev) => ({ ...prev, [id]: "" }));
+    grievanceService
+      .getComments(id)
+      .then((data) => setCommentMap((prev) => ({ ...prev, [id]: data })))
+      .catch((err: any) =>
+        setCommentErrorMap((prev) => ({
+          ...prev,
+          [id]: err?.message || "Failed to load comments",
+        }))
+      )
+      .finally(() =>
+        setCommentLoadingMap((prev) => ({
+          ...prev,
+          [id]: false,
+        }))
+      );
+  }
+
   useEffect(() => {
     const fetchGrievances = async () => {
       try {
