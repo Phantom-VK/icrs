@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import logo from "../../assets/logo.png";
 import { useNavigate } from "react-router-dom";
-import grievanceService from "../../services/grievanceService";
+import grievanceService, { Comment } from "../../services/grievanceService";
 import authService from "../../services/authService";
 
 interface Grievance {
@@ -35,6 +35,10 @@ const FacultyDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [comments, setComments] = useState<Record<number, Comment[]>>({});
+  const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
+  const [commentLoading, setCommentLoading] = useState<Record<number, boolean>>({});
+  const [commentError, setCommentError] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const fetchGrievances = async () => {
@@ -57,6 +61,23 @@ const FacultyDashboard: React.FC = () => {
   }, []);
 
   const handleExpand = (id: number) => setExpandedId(expandedId === id ? null : id);
+
+  const loadComments = async (id: number) => {
+    if (comments[id]) return;
+    setCommentLoading((prev) => ({ ...prev, [id]: true }));
+    setCommentError((prev) => ({ ...prev, [id]: "" }));
+    try {
+      const data = await grievanceService.getComments(id);
+      setComments((prev) => ({ ...prev, [id]: data }));
+    } catch (err: any) {
+      setCommentError((prev) => ({
+        ...prev,
+        [id]: err?.message || "Failed to load comments",
+      }));
+    } finally {
+      setCommentLoading((prev) => ({ ...prev, [id]: false }));
+    }
+  };
 
   const handleStatusChange = (id: number, newStatus: Grievance["status"]) => {
     setStatusUpdates((prev) => ({ ...prev, [id]: newStatus }));
@@ -179,6 +200,7 @@ const FacultyDashboard: React.FC = () => {
                 </Typography>
 
                 <Collapse in={expandedId === g.id}>
+                  {expandedId === g.id && loadComments(g.id)}
                   <Box mt={2}>
                     <Typography>
                       <strong>Registration Number:</strong> {g.registrationNumber}
@@ -222,6 +244,75 @@ const FacultyDashboard: React.FC = () => {
                         </Button>
                       </Box>
                     )}
+
+                    <Box mt={2}>
+                      <Typography variant="subtitle1">Comments</Typography>
+                      {commentLoading[g.id] ? (
+                        <Typography variant="body2">Loading comments...</Typography>
+                      ) : commentError[g.id] ? (
+                        <Typography variant="body2" color="error">
+                          {commentError[g.id]}
+                        </Typography>
+                      ) : comments[g.id]?.length ? (
+                        comments[g.id].map((c) => (
+                          <Box key={c.id} sx={{ mt: 1, p: 1.5, bgcolor: "white", borderRadius: 1 }}>
+                            <Typography variant="body2" fontWeight="bold">
+                              {c.authorName || "User"} ({c.authorEmail || ""})
+                            </Typography>
+                            <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                              {c.body}
+                            </Typography>
+                            {c.createdAt && (
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(c.createdAt).toLocaleString()}
+                              </Typography>
+                            )}
+                          </Box>
+                        ))
+                      ) : (
+                        <Typography variant="body2">No comments yet.</Typography>
+                      )}
+
+                      <TextField
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        sx={{ mt: 1 }}
+                        placeholder="Add a comment for the student"
+                        value={commentInputs[g.id] || ""}
+                        onChange={(e) =>
+                          setCommentInputs((prev) => ({ ...prev, [g.id]: e.target.value }))
+                        }
+                      />
+                      <Button
+                        variant="outlined"
+                        sx={{ mt: 1 }}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const body = (commentInputs[g.id] || "").trim();
+                          if (!body) return;
+                          setCommentLoading((prev) => ({ ...prev, [g.id]: true }));
+                          setCommentError((prev) => ({ ...prev, [g.id]: "" }));
+                          try {
+                            const newComment = await grievanceService.addComment(g.id, body);
+                            setComments((prev) => ({
+                              ...prev,
+                              [g.id]: [...(prev[g.id] || []), newComment],
+                            }));
+                            setCommentInputs((prev) => ({ ...prev, [g.id]: "" }));
+                          } catch (err: any) {
+                            setCommentError((prev) => ({
+                              ...prev,
+                              [g.id]: err?.message || "Failed to add comment",
+                            }));
+                          } finally {
+                            setCommentLoading((prev) => ({ ...prev, [g.id]: false }));
+                          }
+                        }}
+                      >
+                        Add Comment
+                      </Button>
+                    </Box>
                   </Box>
                 </Collapse>
               </CardContent>

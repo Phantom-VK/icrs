@@ -10,6 +10,14 @@ export interface GrievanceData {
   priority?: string; // optional if backend supports it
 }
 
+export interface Comment {
+  id: number;
+  body: string;
+  authorName?: string;
+  authorEmail?: string;
+  createdAt?: string;
+}
+
 const grievanceService = {
   submit: async (data: GrievanceData) => {
     try {
@@ -75,6 +83,34 @@ const grievanceService = {
     } catch (error: any) {
       const message = getErrorMessage(error, "Unable to update grievance status.");
       console.error("Failed to update grievance status:", message);
+      throw new Error(message);
+    }
+  },
+
+  getComments: async (grievanceId: number) => {
+    try {
+      const response = await api.get(`/grievances/${grievanceId}/comments`);
+      return response.data as Comment[];
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        "Failed to load comments.";
+      throw new Error(message);
+    }
+  },
+
+  addComment: async (grievanceId: number, body: string) => {
+    try {
+      const response = await api.post(`/grievances/${grievanceId}/comments`, {
+        body,
+      });
+      return response.data as Comment;
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        "Failed to add comment.";
       throw new Error(message);
     }
   },

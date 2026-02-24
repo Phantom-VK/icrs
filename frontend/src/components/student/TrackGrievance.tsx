@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import grievanceService from "../../services/grievanceService";
+import grievanceService, { Comment } from "../../services/grievanceService";
 
 interface Grievance {
   id: number;
@@ -22,6 +22,9 @@ const TrackGrievance: React.FC = () => {
   >("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [comments, setComments] = useState<Record<number, Comment[]>>({});
+  const [commentLoading, setCommentLoading] = useState<Record<number, boolean>>({});
+  const [commentError, setCommentError] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const fetchGrievances = async () => {
@@ -163,7 +166,11 @@ const TrackGrievance: React.FC = () => {
             {filteredGrievances.map((g) => (
               <div
                 key={g.id}
-                onClick={() => setExpandedId(expandedId === g.id ? null : g.id)}
+                onClick={() => {
+                  const next = expandedId === g.id ? null : g.id;
+                  setExpandedId(next);
+                  if (next !== null) loadComments(g.id);
+                }}
                 style={{
                   padding: "20px",
                   borderRadius: "10px",
@@ -209,6 +216,38 @@ const TrackGrievance: React.FC = () => {
                     <p>
                       <strong>Description:</strong> {g.description}
                     </p>
+                    <div style={{ marginTop: "10px" }}>
+                      <strong>Comments:</strong>
+                      {commentLoading[g.id] ? (
+                        <p>Loading comments...</p>
+                      ) : commentError[g.id] ? (
+                        <p style={{ color: "red" }}>{commentError[g.id]}</p>
+                      ) : comments[g.id]?.length ? (
+                        comments[g.id].map((c) => (
+                          <div
+                            key={c.id}
+                            style={{
+                              marginTop: "6px",
+                              padding: "8px",
+                              background: "#fff",
+                              borderRadius: "6px",
+                            }}
+                          >
+                            <div style={{ fontWeight: 600 }}>
+                              {c.authorName || "User"} ({c.authorEmail || ""})
+                            </div>
+                            <div>{c.body}</div>
+                            {c.createdAt && (
+                              <div style={{ fontSize: "12px", color: "#666" }}>
+                                {new Date(c.createdAt).toLocaleString()}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p>No comments yet.</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -221,3 +260,19 @@ const TrackGrievance: React.FC = () => {
 };
 
 export default TrackGrievance;
+  const loadComments = async (id: number) => {
+    if (comments[id]) return;
+    setCommentLoading((prev) => ({ ...prev, [id]: true }));
+    setCommentError((prev) => ({ ...prev, [id]: "" }));
+    try {
+      const data = await grievanceService.getComments(id);
+      setComments((prev) => ({ ...prev, [id]: data }));
+    } catch (err: any) {
+      setCommentError((prev) => ({
+        ...prev,
+        [id]: err?.message || "Failed to load comments",
+      }));
+    } finally {
+      setCommentLoading((prev) => ({ ...prev, [id]: false }));
+    }
+  };
