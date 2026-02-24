@@ -2,6 +2,8 @@ package com.college.icrs.controller;
 
 import com.college.icrs.dto.GrievanceRequestDTO;
 import com.college.icrs.dto.GrievanceResponseDTO;
+import com.college.icrs.dto.CommentRequestDTO;
+import com.college.icrs.dto.CommentResponseDTO;
 import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Status;
 import com.college.icrs.model.User;
@@ -193,6 +195,31 @@ public class GrievanceController {
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<Map<String, Long>> getStatistics() {
         return ResponseEntity.ok(grievanceService.getGrievanceStatistics());
+    }
+
+    /** Add a comment to a grievance */
+    @PostMapping("/{id}/comments")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<CommentResponseDTO> addComment(
+            @PathVariable Long id,
+            @Valid @RequestBody CommentRequestDTO requestDTO,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+        CommentResponseDTO dto = grievanceService.addComment(id, email, requestDTO.getBody());
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+    }
+
+    /** Get comments for a grievance */
+    @GetMapping("/{id}/comments")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<CommentResponseDTO>> getComments(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+        List<CommentResponseDTO> comments = grievanceService.getComments(id, email);
+        return ResponseEntity.ok(comments);
     }
 
     private void applyCategorySelections(GrievanceRequestDTO grievanceDTO, Grievance grievance) {

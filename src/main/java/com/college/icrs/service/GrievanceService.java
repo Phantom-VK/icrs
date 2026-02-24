@@ -4,9 +4,11 @@ import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Status;
 import com.college.icrs.model.StatusHistory;
 import com.college.icrs.model.User;
+import com.college.icrs.model.Comment;
 import com.college.icrs.repository.GrievanceRepository;
 import com.college.icrs.repository.StatusHistoryRepository;
 import com.college.icrs.repository.UserRepository;
+import com.college.icrs.repository.CommentRepository;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
@@ -24,15 +26,18 @@ public class GrievanceService {
     private final GrievanceRepository grievanceRepository;
     private final UserRepository userRepository;
     private final StatusHistoryRepository statusHistoryRepository;
+    private final CommentRepository commentRepository;
     private final EmailService emailService;
 
     public GrievanceService(GrievanceRepository grievanceRepository,
                             UserRepository userRepository,
                             StatusHistoryRepository statusHistoryRepository,
+                            CommentRepository commentRepository,
                             EmailService emailService) {
         this.grievanceRepository = grievanceRepository;
         this.userRepository = userRepository;
         this.statusHistoryRepository = statusHistoryRepository;
+        this.commentRepository = commentRepository;
         this.emailService = emailService;
     }
 
@@ -143,6 +148,68 @@ public class GrievanceService {
         return grievanceRepository.save(grievance);
     }
 
+    public com.college.icrs.dto.CommentResponseDTO addComment(Long grievanceId, String authorEmail, String body) {
+        Grievance grievance = getGrievanceById(grievanceId);
+        User author = userRepository.findByEmail(authorEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // permission: students can comment only on their own grievance; faculty/admin allowed
+        if (author.getRole() == com.college.icrs.model.Role.STUDENT) {
+            if (grievance.getStudent() == null || !grievance.getStudent().getId().equals(author.getId())) {
+                throw new RuntimeException("Students can only comment on their own grievances.");
+            }
+        }
+
+        Comment comment = new Comment();
+        comment.setGrievance(grievance);
+        comment.setAuthor(author);
+        comment.setBody(body);
+
+        Comment saved = commentRepository.save(comment);
+
+        // notify student if commenter is faculty/admin; notify assigned faculty if commenter is student
+        if (author.getRole() != com.college.icrs.model.Role.STUDENT && grievance.getStudent() != null) {
+            trySendCommentEmailToStudent(grievance.getStudent(), grievance, author, body);
+        } else if (author.getRole() == com.college.icrs.model.Role.STUDENT && grievance.getAssignedTo() != null) {
+            trySendCommentEmailToFaculty(grievance.getAssignedTo(), grievance, author, body);
+        }
+
+        com.college.icrs.dto.CommentResponseDTO dto = new com.college.icrs.dto.CommentResponseDTO();
+        dto.setId(saved.getId());
+        dto.setBody(saved.getBody());
+        dto.setAuthorName(author.getUsername());
+        dto.setAuthorEmail(author.getEmail());
+        dto.setCreatedAt(saved.getCreatedAt());
+        return dto;
+    }
+
+    public List<com.college.icrs.dto.CommentResponseDTO> getComments(Long grievanceId, String requesterEmail) {
+        Grievance grievance = getGrievanceById(grievanceId);
+        User requester = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (requester.getRole() == com.college.icrs.model.Role.STUDENT) {
+            if (grievance.getStudent() == null || !grievance.getStudent().getId().equals(requester.getId())) {
+                throw new RuntimeException("Students can only view their own grievances.");
+            }
+        }
+
+        return commentRepository.findByGrievanceIdOrderByCreatedAtAsc(grievanceId)
+                .stream()
+                .map(c -> {
+                    com.college.icrs.dto.CommentResponseDTO dto = new com.college.icrs.dto.CommentResponseDTO();
+                    dto.setId(c.getId());
+                    dto.setBody(c.getBody());
+                    if (c.getAuthor() != null) {
+                        dto.setAuthorName(c.getAuthor().getUsername());
+                        dto.setAuthorEmail(c.getAuthor().getEmail());
+                    }
+                    dto.setCreatedAt(c.getCreatedAt());
+                    return dto;
+                })
+                .toList();
+    }
+
     public List<Grievance> searchGrievancesByTitle(String title) {
         return grievanceRepository.findAll().stream()
                 .filter(g -> g.getTitle() != null &&
@@ -199,5 +266,25 @@ public class GrievanceService {
             // Do not block main flow on email failure; log to console for now.
             System.err.println("Failed to send email to " + to + ": " + e.getMessage());
         }
+    }
+
+    private void trySendCommentEmailToStudent(User student, Grievance grievance, User author, String commentBody) {
+        String subject = "New comment on your grievance: " + grievance.getTitle();
+        String body = """
+                <p>Dear %s,</p>
+                <p>%s added a comment on your grievance "<b>%s</b>":</p>
+                <blockquote>%s</blockquote>
+                """.formatted(student.getUsername(), author.getUsername(), grievance.getTitle(), commentBody);
+        sendEmailSafe(student.getEmail(), subject, body);
+    }
+
+    private void trySendCommentEmailToFaculty(User faculty, Grievance grievance, User author, String commentBody) {
+        String subject = "New student comment on grievance: " + grievance.getTitle();
+        String body = """
+                <p>Hello %s,</p>
+                <p>%s commented on grievance "<b>%s</b>":</p>
+                <blockquote>%s</blockquote>
+                """.formatted(faculty.getUsername(), author.getUsername(), grievance.getTitle(), commentBody);
+        sendEmailSafe(faculty.getEmail(), subject, body);
     }
 }
