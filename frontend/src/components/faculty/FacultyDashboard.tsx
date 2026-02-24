@@ -233,6 +233,7 @@ const FacultyDashboard: React.FC = () => {
                             handleStatusChange(g.id, e.target.value as Grievance["status"])
                           }
                           sx={{ minWidth: 180 }}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <MenuItem value="SUBMITTED">Submitted</MenuItem>
                           <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
@@ -291,6 +292,7 @@ const FacultyDashboard: React.FC = () => {
                         onChange={(e) =>
                           setCommentInputs((prev) => ({ ...prev, [g.id]: e.target.value }))
                         }
+                        onClick={(e) => e.stopPropagation()}
                       />
                       <Button
                         variant="outlined"
