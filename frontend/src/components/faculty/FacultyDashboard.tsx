@@ -13,7 +13,8 @@ import {
 } from "@mui/material";
 import logo from "../../assets/logo.png";
 import { useNavigate } from "react-router-dom";
-import grievanceService, { Comment } from "../../services/grievanceService";
+import grievanceService from "../../services/grievanceService";
+import type { Comment } from "../../services/grievanceService";
 import authService from "../../services/authService";
 
 interface Grievance {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import grievanceService, { Comment } from "../../services/grievanceService";
+import grievanceService from "../../services/grievanceService";
+import type { Comment } from "../../services/grievanceService";
 
 interface Grievance {
   id: number;
