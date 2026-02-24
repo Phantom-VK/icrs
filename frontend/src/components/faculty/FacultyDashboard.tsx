@@ -80,6 +80,14 @@ const FacultyDashboard: React.FC = () => {
     }
   };
 
+  // Load comments when a grievance is expanded
+  useEffect(() => {
+    if (expandedId !== null) {
+      loadComments(expandedId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedId]);
+
   const handleStatusChange = (id: number, newStatus: Grievance["status"]) => {
     setStatusUpdates((prev) => ({ ...prev, [id]: newStatus }));
   };
@@ -201,7 +209,6 @@ const FacultyDashboard: React.FC = () => {
                 </Typography>
 
                 <Collapse in={expandedId === g.id}>
-                  {expandedId === g.id && loadComments(g.id)}
                   <Box mt={2}>
                     <Typography>
                       <strong>Registration Number:</strong> {g.registrationNumber}
