@@ -184,23 +184,43 @@ const StudentDashboard: React.FC = () => {
             <p>No grievances found.</p>
           ) : (
             <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-              {grievances.map((g) => (
-                <li
-                  key={g.id}
-                  onClick={() => toggleExpand(g.id)}
-                  style={{
+          {grievances.map((g) => (
+            <li
+              key={g.id}
+              onClick={() => toggleExpand(g.id)}
+              style={{
                     padding: "15px 0",
                     borderBottom: "1px solid #ddd",
                     cursor: "pointer",
                     color: "#000",
                   }}
-                >
-                  <strong>{g.title}</strong> - Status: {g.status}
-                  {expandedId === g.id && (
-                    <div
-                      style={{
-                        marginTop: "5px",
-                        fontSize: "0.9em",
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span>
+                    <strong>{g.title}</strong> - Status: {g.status}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/student/track-grievance?id=${g.id}`);
+                    }}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: "4px",
+                      border: "1px solid #0288d1",
+                      background: "#fff",
+                      color: "#0288d1",
+                      cursor: "pointer",
+                    }}
+                  >
+                    More info
+                  </button>
+                </div>
+                {expandedId === g.id && (
+                  <div
+                    style={{
+                      marginTop: "5px",
+                      fontSize: "0.9em",
                         paddingLeft: "10px",
                       }}
                     >

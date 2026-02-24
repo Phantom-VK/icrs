@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import grievanceService from "../../services/grievanceService";
 import type { Comment } from "../../services/grievanceService";
 
@@ -15,6 +15,7 @@ interface Grievance {
 
 const TrackGrievance: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [grievances, setGrievances] = useState<Grievance[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -34,6 +35,18 @@ const TrackGrievance: React.FC = () => {
         const data = await grievanceService.getMyGrievances();
         setGrievances(data || []);
         console.log("Fetched grievances:", data);
+
+        // auto-expand if id query param present
+        const params = new URLSearchParams(location.search);
+        const target = params.get("id");
+        if (target) {
+          const targetId = Number(target);
+          const exists = (data || []).some((g: any) => g.id === targetId);
+          if (exists) {
+            setExpandedId(targetId);
+            loadComments(targetId);
+          }
+        }
       } catch (err) {
         console.error("Failed to load grievances:", err);
         setError("Failed to load grievances. Please try again.");
@@ -42,7 +55,8 @@ const TrackGrievance: React.FC = () => {
       }
     };
     fetchGrievances();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   const filteredGrievances = grievances.filter((g) => {
     const matchesSearch =
