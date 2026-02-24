@@ -23,9 +23,9 @@ const TrackGrievance: React.FC = () => {
   >("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [comments, setComments] = useState<Record<number, Comment[]>>({});
-  const [commentLoading, setCommentLoading] = useState<Record<number, boolean>>({});
-  const [commentError, setCommentError] = useState<Record<number, string>>({});
+  const [commentMap, setCommentMap] = useState<Record<number, Comment[]>>({});
+  const [commentLoadingMap, setCommentLoadingMap] = useState<Record<number, boolean>>({});
+  const [commentErrorMap, setCommentErrorMap] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const fetchGrievances = async () => {
@@ -219,12 +219,12 @@ const TrackGrievance: React.FC = () => {
                     </p>
                     <div style={{ marginTop: "10px" }}>
                       <strong>Comments:</strong>
-                      {commentLoading[g.id] ? (
+                      {commentLoadingMap[g.id] ? (
                         <p>Loading comments...</p>
-                      ) : commentError[g.id] ? (
-                        <p style={{ color: "red" }}>{commentError[g.id]}</p>
-                      ) : comments[g.id]?.length ? (
-                        comments[g.id].map((c) => (
+                      ) : commentErrorMap[g.id] ? (
+                        <p style={{ color: "red" }}>{commentErrorMap[g.id]}</p>
+                      ) : commentMap[g.id]?.length ? (
+                        commentMap[g.id].map((c) => (
                           <div
                             key={c.id}
                             style={{
@@ -262,18 +262,18 @@ const TrackGrievance: React.FC = () => {
 
 export default TrackGrievance;
   const loadComments = async (id: number) => {
-    if (comments[id]) return;
-    setCommentLoading((prev) => ({ ...prev, [id]: true }));
-    setCommentError((prev) => ({ ...prev, [id]: "" }));
+    if (commentMap[id]) return;
+    setCommentLoadingMap((prev) => ({ ...prev, [id]: true }));
+    setCommentErrorMap((prev) => ({ ...prev, [id]: "" }));
     try {
       const data = await grievanceService.getComments(id);
-      setComments((prev) => ({ ...prev, [id]: data }));
+      setCommentMap((prev) => ({ ...prev, [id]: data }));
     } catch (err: any) {
-      setCommentError((prev) => ({
+      setCommentErrorMap((prev) => ({
         ...prev,
         [id]: err?.message || "Failed to load comments",
       }));
     } finally {
-      setCommentLoading((prev) => ({ ...prev, [id]: false }));
+      setCommentLoadingMap((prev) => ({ ...prev, [id]: false }));
     }
   };
