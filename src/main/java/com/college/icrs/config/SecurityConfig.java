@@ -19,15 +19,19 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@org.springframework.boot.context.properties.EnableConfigurationProperties(IcrsProperties.class)
 public class SecurityConfig {
 
     private final AuthenticationProvider authenticationProvider;
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
+    private final IcrsProperties icrsProperties;
 
     public SecurityConfig(JWTAuthenticationFilter jwtAuthenticationFilter,
-                          AuthenticationProvider authenticationProvider) {
+                          AuthenticationProvider authenticationProvider,
+                          IcrsProperties icrsProperties) {
         this.authenticationProvider = authenticationProvider;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.icrsProperties = icrsProperties;
     }
 
     @Bean
@@ -66,10 +70,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173", // Vite frontend
-                "http://localhost:3000"  // React dev server
-        ));
+        List<String> allowedOrigins = icrsProperties.getCors().getAllowedOrigins();
+        configuration.setAllowedOrigins(allowedOrigins == null || allowedOrigins.isEmpty()
+                ? List.of("http://localhost:5173", "http://localhost:3000")
+                : allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setExposedHeaders(List.of("Authorization"));
