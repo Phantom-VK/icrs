@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/grievances")
 @Validated
+@lombok.RequiredArgsConstructor
 public class GrievanceController {
 
     private final GrievanceService grievanceService;
@@ -35,18 +36,6 @@ public class GrievanceController {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final SubcategoryRepository subcategoryRepository;
-
-    public GrievanceController(GrievanceService grievanceService,
-                               GrievanceMapper grievanceMapper,
-                               UserRepository userRepository,
-                               CategoryRepository categoryRepository,
-                               SubcategoryRepository subcategoryRepository) {
-        this.grievanceService = grievanceService;
-        this.grievanceMapper = grievanceMapper;
-        this.userRepository = userRepository;
-        this.categoryRepository = categoryRepository;
-        this.subcategoryRepository = subcategoryRepository;
-    }
 
     /** Create a new grievance (Student submission) */
     @PostMapping

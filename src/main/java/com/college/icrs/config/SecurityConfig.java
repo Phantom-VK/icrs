@@ -19,20 +19,13 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@lombok.RequiredArgsConstructor
 @org.springframework.boot.context.properties.EnableConfigurationProperties(IcrsProperties.class)
 public class SecurityConfig {
 
     private final AuthenticationProvider authenticationProvider;
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
     private final IcrsProperties icrsProperties;
-
-    public SecurityConfig(JWTAuthenticationFilter jwtAuthenticationFilter,
-                          AuthenticationProvider authenticationProvider,
-                          IcrsProperties icrsProperties) {
-        this.authenticationProvider = authenticationProvider;
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.icrsProperties = icrsProperties;
-    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

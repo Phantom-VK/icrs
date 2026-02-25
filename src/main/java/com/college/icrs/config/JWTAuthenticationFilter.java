@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 @Component
+@lombok.RequiredArgsConstructor
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
     private final HandlerExceptionResolver handlerExceptionResolver;
@@ -34,15 +35,6 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             "/error",
             "/actuator"
     );
-
-    public JWTAuthenticationFilter(
-            JwtService jwtService,
-            HandlerExceptionResolver handlerExceptionResolver,
-            UserDetailsService userDetailsService) {
-        this.handlerExceptionResolver = handlerExceptionResolver;
-        this.jwtService = jwtService;
-        this.userDetailsService = userDetailsService;
-    }
 
     /** Skip JWT filtering for public endpoints */
     @Override

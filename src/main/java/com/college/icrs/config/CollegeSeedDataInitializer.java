@@ -9,22 +9,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
+@lombok.RequiredArgsConstructor
 public class CollegeSeedDataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CategoryRepository categoryRepository;
     private final SubcategoryRepository subcategoryRepository;
-
-    public CollegeSeedDataInitializer(UserRepository userRepository,
-                                      PasswordEncoder passwordEncoder,
-                                      CategoryRepository categoryRepository,
-                                      SubcategoryRepository subcategoryRepository) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.categoryRepository = categoryRepository;
-        this.subcategoryRepository = subcategoryRepository;
-    }
 
     @Override
     public void run(String... args) throws Exception {

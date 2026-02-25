@@ -21,6 +21,7 @@ import java.util.Map;
 
 @Service
 @Transactional
+@lombok.RequiredArgsConstructor
 public class GrievanceService {
 
     private final GrievanceRepository grievanceRepository;
@@ -28,18 +29,6 @@ public class GrievanceService {
     private final StatusHistoryRepository statusHistoryRepository;
     private final CommentRepository commentRepository;
     private final EmailService emailService;
-
-    public GrievanceService(GrievanceRepository grievanceRepository,
-                            UserRepository userRepository,
-                            StatusHistoryRepository statusHistoryRepository,
-                            CommentRepository commentRepository,
-                            EmailService emailService) {
-        this.grievanceRepository = grievanceRepository;
-        this.userRepository = userRepository;
-        this.statusHistoryRepository = statusHistoryRepository;
-        this.commentRepository = commentRepository;
-        this.emailService = emailService;
-    }
 
     public Grievance createGrievance(Grievance grievance, Long studentId) {
         User student = userRepository.findById(studentId)
