@@ -18,7 +18,7 @@ import type { Comment } from "../../services/grievanceService";
 import authService from "../../services/authService";
 import { useSnackbar } from "notistack";
 import type { StatusHistory } from "../../types/statusHistory";
-import { getActiveSortedGrievances } from "../../utils/grievanceFilters";
+import { getActiveSortedGrievances, getHistorySortedGrievances } from "../../utils/grievanceFilters";
 
 interface Grievance {
   id: number;
@@ -47,6 +47,7 @@ const FacultyDashboard: React.FC = () => {
   const [commentLoading, setCommentLoading] = useState<Record<number, boolean>>({});
   const [commentError, setCommentError] = useState<Record<number, string>>({});
   const [overlay, setOverlay] = useState(false);
+  const [tab, setTab] = useState<"active" | "history">("active");
 
   useEffect(() => {
     const fetchGrievances = async () => {
@@ -143,6 +144,11 @@ const FacultyDashboard: React.FC = () => {
   const resolvedCount = grievances.filter((g) => g.status === "RESOLVED").length;
   const rejectedCount = grievances.filter((g) => g.status === "REJECTED").length;
 
+  const visibleGrievances =
+    tab === "active"
+      ? getActiveSortedGrievances(filteredGrievances)
+      : getHistorySortedGrievances(filteredGrievances);
+
   return (
     <Box
       sx={{
@@ -212,16 +218,34 @@ const FacultyDashboard: React.FC = () => {
           sx={{ mb: 3, backgroundColor: "#fff", borderRadius: 1 }}
         />
 
+        {/* Tab Switcher */}
+        <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+          {[
+            { key: "active", label: "Active (Submitted / In Progress)" },
+            { key: "history", label: "History (Resolved / Rejected)" },
+          ].map((t) => (
+            <Button
+              key={t.key}
+              variant={tab === t.key ? "contained" : "outlined"}
+              onClick={() => setTab(t.key as typeof tab)}
+            >
+              {t.label}
+            </Button>
+          ))}
+        </Box>
+
         {/* Content */}
         {loading ? (
           <Box textAlign="center">
             <CircularProgress />
             <Typography>Loading grievances...</Typography>
           </Box>
-        ) : getActiveSortedGrievances(filteredGrievances).length === 0 ? (
-          <Typography>No active grievances.</Typography>
+        ) : visibleGrievances.length === 0 ? (
+          <Typography>
+            {tab === "active" ? "No active grievances." : "No grievance history yet."}
+          </Typography>
         ) : (
-          getActiveSortedGrievances(filteredGrievances).map((g) => (
+          visibleGrievances.map((g) => (
             <Card
               key={g.id}
               sx={{ mb: 2, bgcolor: "#f5f5f5", cursor: "pointer" }}
