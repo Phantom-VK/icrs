@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
@@ -15,26 +15,48 @@ import grievanceService from "../../services/grievanceService";
 import authService from "../../services/authService";
 import LoadingOverlay from "../common/LoadingOverlay";
 import { useSnackbar } from "notistack";
-
-const categories = ["Academic", "Administrative", "Facilities", "Other"];
-const subCategories = ["Issue 1", "Issue 2", "Issue 3", "Other"];
+import type { Category, Subcategory } from "../../types/category";
 
 const SubmitGrievance: React.FC = () => {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
-  const [category, setCategory] = useState("");
-  const [subCategory, setSubCategory] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryId, setCategoryId] = useState<number | "">("");
+  const [subCategoryId, setSubCategoryId] = useState<number | "">("");
   const [description, setDescription] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [categoryLoading, setCategoryLoading] = useState(false);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      setCategoryLoading(true);
+      try {
+        const data = await grievanceService.getCategories();
+        setCategories(data || []);
+      } catch (err: any) {
+        const message = err?.message || "Failed to load categories.";
+        setError(message);
+        enqueueSnackbar(message, { variant: "error" });
+      } finally {
+        setCategoryLoading(false);
+      }
+    };
+    loadCategories();
+  }, [enqueueSnackbar]);
+
+  const currentSubcategories: Subcategory[] = useMemo(() => {
+    const cat = categories.find((c) => c.id === categoryId);
+    return cat?.subcategories || [];
+  }, [categories, categoryId]);
 
   const handleSubmit = async () => {
     setError(null);
     setSubmitted(false);
 
-    if (!category || !description || !registrationNumber) {
+    if (!categoryId || !description || !registrationNumber) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -49,11 +71,13 @@ const SubmitGrievance: React.FC = () => {
         console.warn("Could not fetch user info, proceeding anyway.");
       }
 
-      const title = `${category}${subCategory ? ` - ${subCategory}` : ""}`;
+      const selectedCategory = categories.find((c) => c.id === categoryId);
+      const selectedSub = currentSubcategories.find((s) => s.id === subCategoryId);
+      const title = `${selectedCategory?.name || "Grievance"}${selectedSub ? ` - ${selectedSub.name}` : ""}`;
       const payload = {
         title,
-        category,
-        subcategory: subCategory,
+        categoryId,
+        subcategoryId: subCategoryId || undefined,
         description,
         registrationNumber,
       };
@@ -65,8 +89,8 @@ const SubmitGrievance: React.FC = () => {
 
       setSubmitted(true);
       enqueueSnackbar("Grievance submitted successfully", { variant: "success" });
-      setCategory("");
-      setSubCategory("");
+      setCategoryId("");
+      setSubCategoryId("");
       setDescription("");
       setRegistrationNumber("");
 
@@ -138,12 +162,23 @@ const SubmitGrievance: React.FC = () => {
             fullWidth
             label="Category"
             margin="normal"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            value={categoryId}
+            onChange={(e) => {
+              setCategoryId(Number(e.target.value));
+              setSubCategoryId("");
+            }}
+            disabled={categoryLoading}
+            helperText={
+              categoryLoading
+                ? "Loading categories..."
+                : categories.length === 0
+                  ? "No categories available"
+                  : ""
+            }
           >
             {categories.map((c) => (
-              <MenuItem key={c} value={c}>
-                {c}
+              <MenuItem key={c.id} value={c.id}>
+                {c.name}
               </MenuItem>
             ))}
           </TextField>
@@ -153,12 +188,20 @@ const SubmitGrievance: React.FC = () => {
             fullWidth
             label="Sub Category"
             margin="normal"
-            value={subCategory}
-            onChange={(e) => setSubCategory(e.target.value)}
+            value={subCategoryId}
+            onChange={(e) => setSubCategoryId(Number(e.target.value))}
+            disabled={!categoryId || currentSubcategories.length === 0}
+            helperText={
+              !categoryId
+                ? "Select a category first"
+                : currentSubcategories.length === 0
+                  ? "No subcategories for this category"
+                  : ""
+            }
           >
-            {subCategories.map((s) => (
-              <MenuItem key={s} value={s}>
-                {s}
+            {currentSubcategories.map((s) => (
+              <MenuItem key={s.id} value={s.id}>
+                {s.name}
               </MenuItem>
             ))}
           </TextField>

@@ -1,11 +1,14 @@
 import api from "./apiClient";
 import { getErrorMessage } from "../utils/error";
+import type { Category } from "../types/category";
 
 export interface GrievanceData {
   title: string;
   description: string;
-  category: string;
+  category?: string;
   subcategory?: string;
+  categoryId?: number;
+  subcategoryId?: number;
   registrationNumber?: string | number;
   priority?: string; // optional if backend supports it
 }
@@ -111,6 +114,16 @@ const grievanceService = {
         error?.response?.data?.message ||
         error?.response?.data ||
         "Failed to add comment.";
+      throw new Error(message);
+    }
+  },
+
+  getCategories: async (): Promise<Category[]> => {
+    try {
+      const response = await api.get("/categories");
+      return response.data as Category[];
+    } catch (error: any) {
+      const message = getErrorMessage(error, "Unable to load categories.");
       throw new Error(message);
     }
   },

@@ -38,7 +38,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/auth/**",       // signup, login, verify, resend
                                 "/error",         // default error handler
-                                "/actuator/**"    // optional diagnostic endpoints
+                                "/actuator/**",   // optional diagnostic endpoints
+                                "/categories/**"  // category/subcategory lookups for forms
                         ).permitAll()
 
                         .requestMatchers(
