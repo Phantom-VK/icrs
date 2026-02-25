@@ -37,3 +37,6 @@ out/
 .vscode/
 /application-secrets.properties
 /.env
+
+# Local documents/artifacts
+documents/*.pdf
