@@ -3,6 +3,7 @@ package com.college.icrs.utils;
 import com.college.icrs.dto.GrievanceRequestDTO;
 import com.college.icrs.dto.GrievanceResponseDTO;
 import com.college.icrs.model.Grievance;
+import com.college.icrs.model.StatusHistory;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
@@ -55,6 +56,12 @@ public class GrievanceMapper {
 
         dto.setCreatedAt(grievance.getCreatedAt());
         dto.setUpdatedAt(grievance.getUpdatedAt());
+        if (grievance.getStatusHistory() != null) {
+            List<GrievanceResponseDTO.StatusHistoryItem> history = grievance.getStatusHistory().stream()
+                    .map(this::mapStatusHistory)
+                    .toList();
+            dto.setStatusHistory(history);
+        }
 
         return dto;
     }
@@ -76,5 +83,17 @@ public class GrievanceMapper {
 
         grievance.setTitle(dto.getTitle());
         grievance.setDescription(dto.getDescription());
+    }
+
+    private GrievanceResponseDTO.StatusHistoryItem mapStatusHistory(StatusHistory history) {
+        GrievanceResponseDTO.StatusHistoryItem item = new GrievanceResponseDTO.StatusHistoryItem();
+        item.setFromStatus(history.getFromStatus() != null ? history.getFromStatus().name() : null);
+        item.setToStatus(history.getToStatus() != null ? history.getToStatus().name() : null);
+        item.setChangedAt(history.getChangedAt());
+        if (history.getActor() != null) {
+            item.setActorName(history.getActor().getUsername());
+        }
+        item.setReason(history.getReason());
+        return item;
     }
 }

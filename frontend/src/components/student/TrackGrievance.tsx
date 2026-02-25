@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import grievanceService from "../../services/grievanceService";
 import type { Comment } from "../../services/grievanceService";
 import { useDebounce } from "../../utils/useDebounce";
+import type { StatusHistory } from "../../types/statusHistory";
 
 interface Grievance {
   id: number;
@@ -12,6 +13,7 @@ interface Grievance {
   subcategory: string;
   registrationNumber: string;
   status: "SUBMITTED" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
+  statusHistory?: StatusHistory[];
 }
 
 const TrackGrievance: React.FC = () => {
@@ -293,6 +295,41 @@ const TrackGrievance: React.FC = () => {
                       <strong>Description:</strong> {g.description}
                     </p>
                     <div style={{ marginTop: "10px" }}>
+                      <strong>Status History:</strong>
+                      {g.statusHistory && g.statusHistory.length > 0 ? (
+                        g.statusHistory
+                          .slice()
+                          .sort((a, b) => {
+                            const aTime = a.changedAt ? new Date(a.changedAt).getTime() : 0;
+                            const bTime = b.changedAt ? new Date(b.changedAt).getTime() : 0;
+                            return bTime - aTime;
+                          })
+                          .map((h, idx) => (
+                            <div
+                              key={h.id || idx}
+                              style={{
+                                marginTop: "6px",
+                                padding: "8px",
+                                background: "#fff",
+                                borderRadius: "6px",
+                              }}
+                            >
+                              <div style={{ fontWeight: 600 }}>
+                                {h.fromStatus ? h.fromStatus.replace("_", " ") : "New"} →{" "}
+                                {h.toStatus.replace("_", " ")}
+                              </div>
+                              <div style={{ fontSize: "12px", color: "#666" }}>
+                                {h.actorName ? `By ${h.actorName} · ` : ""}
+                                {h.changedAt ? new Date(h.changedAt).toLocaleString() : "Time N/A"}
+                              </div>
+                              {h.reason && <div>Reason: {h.reason}</div>}
+                            </div>
+                          ))
+                      ) : (
+                        <p>No history yet.</p>
+                      )}
+                    </div>
+                    <div style={{ marginTop: "10px" }}>
                       <strong>Comments:</strong>
                       {commentLoadingMap[g.id] ? (
                         <p>Loading comments...</p>
@@ -336,19 +373,3 @@ const TrackGrievance: React.FC = () => {
 };
 
 export default TrackGrievance;
-  const loadComments = async (id: number) => {
-    if (commentMap[id]) return;
-    setCommentLoadingMap((prev) => ({ ...prev, [id]: true }));
-    setCommentErrorMap((prev) => ({ ...prev, [id]: "" }));
-    try {
-      const data = await grievanceService.getComments(id);
-      setCommentMap((prev) => ({ ...prev, [id]: data }));
-    } catch (err: any) {
-      setCommentErrorMap((prev) => ({
-        ...prev,
-        [id]: err?.message || "Failed to load comments",
-      }));
-    } finally {
-      setCommentLoadingMap((prev) => ({ ...prev, [id]: false }));
-    }
-  };

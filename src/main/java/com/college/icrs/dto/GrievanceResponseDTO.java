@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -25,5 +26,16 @@ public class GrievanceResponseDTO {
     private String assignedToName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<StatusHistoryItem> statusHistory;
+
+    @Getter
+    @Setter
+    public static class StatusHistoryItem {
+        private String fromStatus;
+        private String toStatus;
+        private String actorName;
+        private LocalDateTime changedAt;
+        private String reason;
+    }
 
 }

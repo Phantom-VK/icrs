@@ -16,6 +16,8 @@ import { useNavigate } from "react-router-dom";
 import grievanceService from "../../services/grievanceService";
 import type { Comment } from "../../services/grievanceService";
 import authService from "../../services/authService";
+import { useSnackbar } from "notistack";
+import type { StatusHistory } from "../../types/statusHistory";
 
 interface Grievance {
   id: number;
@@ -25,17 +27,20 @@ interface Grievance {
   subcategory: string;
   registrationNumber: string;
   status: "SUBMITTED" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
+  statusHistory?: StatusHistory[];
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 const FacultyDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const [grievances, setGrievances] = useState<Grievance[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [statusUpdates, setStatusUpdates] = useState<Record<number, Grievance["status"]>>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
   const [comments, setComments] = useState<Record<number, Comment[]>>({});
   const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
   const [commentLoading, setCommentLoading] = useState<Record<number, boolean>>({});
@@ -99,16 +104,14 @@ const FacultyDashboard: React.FC = () => {
 
     try {
       setOverlay(true);
-      await grievanceService.updateStatus(id, newStatus);
+      const updated = await grievanceService.updateStatus(id, newStatus);
       setGrievances((prev) =>
-        prev.map((g) => (g.id === id ? { ...g, status: newStatus } : g))
+        prev.map((g) => (g.id === id ? { ...g, ...updated } : g))
       );
-      setSuccessMsg(`Grievance #${id} updated to ${newStatus}`);
-      setTimeout(() => setSuccessMsg(""), 2000);
-    } catch (err) {
+      enqueueSnackbar(`Grievance #${id} updated to ${newStatus}`, { variant: "success" });
+    } catch (err: any) {
       console.error("Update failed:", err);
-      setError("Failed to update grievance.");
-      setTimeout(() => setError(""), 2000);
+      enqueueSnackbar(err?.message || "Failed to update grievance", { variant: "error" });
     } finally {
       setOverlay(false);
     }
@@ -188,7 +191,6 @@ const FacultyDashboard: React.FC = () => {
         </Box>
 
         {/* Notifications */}
-        {successMsg && <Alert severity="success" sx={{ mb: 2 }}>{successMsg}</Alert>}
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         {/* Summary */}
@@ -244,6 +246,38 @@ const FacultyDashboard: React.FC = () => {
                     <Typography>
                       <strong>Description:</strong> {g.description}
                     </Typography>
+
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle1">Status History</Typography>
+                      {g.statusHistory && g.statusHistory.length > 0 ? (
+                        g.statusHistory
+                          .slice()
+                          .sort((a, b) => {
+                            const aTime = a.changedAt ? new Date(a.changedAt).getTime() : 0;
+                            const bTime = b.changedAt ? new Date(b.changedAt).getTime() : 0;
+                            return bTime - aTime;
+                          })
+                          .map((h, idx) => (
+                            <Box key={h.id || idx} sx={{ mt: 1, p: 1.2, bgcolor: "white", borderRadius: 1 }}>
+                              <Typography variant="body2" fontWeight="bold">
+                                {h.fromStatus ? h.fromStatus.replace("_", " ") : "New"} →{" "}
+                                {h.toStatus.replace("_", " ")}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {h.actorName ? `By ${h.actorName} · ` : ""}
+                                {h.changedAt ? new Date(h.changedAt).toLocaleString() : "Time N/A"}
+                              </Typography>
+                              {h.reason && (
+                                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                  Reason: {h.reason}
+                                </Typography>
+                              )}
+                            </Box>
+                          ))
+                      ) : (
+                        <Typography variant="body2">No history yet.</Typography>
+                      )}
+                    </Box>
 
                     {g.status !== "RESOLVED" && g.status !== "REJECTED" && (
                       <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 2 }}>
@@ -331,12 +365,14 @@ const FacultyDashboard: React.FC = () => {
                               ...prev,
                               [g.id]: [...(prev[g.id] || []), newComment],
                             }));
+                            enqueueSnackbar("Comment added", { variant: "success" });
                             setCommentInputs((prev) => ({ ...prev, [g.id]: "" }));
                           } catch (err: any) {
                             setCommentError((prev) => ({
                               ...prev,
                               [g.id]: err?.message || "Failed to add comment",
                             }));
+                            enqueueSnackbar(err?.message || "Failed to add comment", { variant: "error" });
                           } finally {
                             setCommentLoading((prev) => ({ ...prev, [g.id]: false }));
                           }
