@@ -11,59 +11,62 @@ import TrackGrievance from "./components/student/TrackGrievance";
 
 import FacultyDashboard from "./components/faculty/FacultyDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { SnackbarProvider } from "notistack";
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Default redirect to login */}
-        <Route path="/" element={<Navigate to="/auth/login" replace />} />
+    <SnackbarProvider maxSnack={3} autoHideDuration={2500} anchorOrigin={{ vertical: "bottom", horizontal: "right" }}>
+      <Router>
+        <Routes>
+          {/* Default redirect to login */}
+          <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
-        {/* Public routes */}
-        <Route path="/auth/login" element={<LoginPage />} />
-        <Route path="/auth/create-account" element={<CreateAccount />} />
-        <Route path="/auth/verify" element={<VerifyAccount />} />
+          {/* Public routes */}
+          <Route path="/auth/login" element={<LoginPage />} />
+          <Route path="/auth/create-account" element={<CreateAccount />} />
+          <Route path="/auth/verify" element={<VerifyAccount />} />
 
-        {/* Protected Student Routes */}
-        <Route
-          path="/auth/student-dashboard"
-          element={
-            <ProtectedRoute>
-              <StudentDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/student/submit-grievance"
-          element={
-            <ProtectedRoute>
-              <SubmitGrievance />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/student/track-grievance"
-          element={
-            <ProtectedRoute>
-              <TrackGrievance />
-            </ProtectedRoute>
-          }
-        />
+          {/* Protected Student Routes */}
+          <Route
+            path="/auth/student-dashboard"
+            element={
+              <ProtectedRoute>
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/submit-grievance"
+            element={
+              <ProtectedRoute>
+                <SubmitGrievance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/track-grievance"
+            element={
+              <ProtectedRoute>
+                <TrackGrievance />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Protected Faculty Route */}
-        <Route
-          path="/faculty/dashboard"
-          element={
-            <ProtectedRoute>
-              <FacultyDashboard />
-            </ProtectedRoute>
-          }
-        />
+          {/* Protected Faculty Route */}
+          <Route
+            path="/faculty/dashboard"
+            element={
+              <ProtectedRoute>
+                <FacultyDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/auth/login" replace />} />
-      </Routes>
-    </Router>
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/auth/login" replace />} />
+        </Routes>
+      </Router>
+    </SnackbarProvider>
   );
 }
 

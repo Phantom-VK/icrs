@@ -14,9 +14,11 @@ import logo from "../../assets/logo.png";
 import authService from "../../services/authService";
 import axios from "axios";
 import LoadingOverlay from "../common/LoadingOverlay";
+import { useSnackbar } from "notistack";
 
 const CreateAccount: React.FC = () => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   const [formData, setFormData] = useState({
     username: "",
@@ -59,6 +61,7 @@ const CreateAccount: React.FC = () => {
       );
 
       setMessage("Account created successfully! Check your email for verification.");
+      enqueueSnackbar("Account created successfully", { variant: "success" });
       // Redirect to verification page
       setTimeout(() => navigate(`/auth/verify?email=${formData.email}`), 2000);
     } catch (error: unknown) {
@@ -70,11 +73,14 @@ const CreateAccount: React.FC = () => {
               ? error.response.data
               : error.response.data.message || "Signup failed.";
           setMessage(backendMessage);
+          enqueueSnackbar(backendMessage, { variant: "error" });
         } else {
           setMessage("Network error. Please try again.");
+          enqueueSnackbar("Network error. Please try again.", { variant: "error" });
         }
       } else {
         setMessage("Unexpected error occurred.");
+        enqueueSnackbar("Unexpected error occurred.", { variant: "error" });
       }
     } finally {
       setLoading(false);

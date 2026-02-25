@@ -14,9 +14,11 @@ import logo from "../../assets/logo.png";
 import authService from "../../services/authService";
 import axios from "axios";
 import LoadingOverlay from "../common/LoadingOverlay";
+import { useSnackbar } from "notistack";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -41,6 +43,7 @@ const handleLogin = async () => {
     }
 
     setMessage("Login successful!");
+    enqueueSnackbar("Login successful", { variant: "success" });
 
     // Store session data
     localStorage.setItem("isLoggedIn", "true");
@@ -69,8 +72,10 @@ const handleLogin = async () => {
           : error.response?.data?.message || "Invalid credentials.";
 
       setMessage(backendMessage);
+      enqueueSnackbar(backendMessage, { variant: "error" });
     } else {
       setMessage("Unexpected error occurred.");
+      enqueueSnackbar("Unexpected error occurred.", { variant: "error" });
     }
   } finally {
     setLoading(false);

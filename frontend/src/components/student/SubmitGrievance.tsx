@@ -14,12 +14,14 @@ import logo from "../../assets/logo.png";
 import grievanceService from "../../services/grievanceService";
 import authService from "../../services/authService";
 import LoadingOverlay from "../common/LoadingOverlay";
+import { useSnackbar } from "notistack";
 
 const categories = ["Academic", "Administrative", "Facilities", "Other"];
 const subCategories = ["Issue 1", "Issue 2", "Issue 3", "Other"];
 
 const SubmitGrievance: React.FC = () => {
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
   const [category, setCategory] = useState("");
   const [subCategory, setSubCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -62,6 +64,7 @@ const SubmitGrievance: React.FC = () => {
       console.log("Backend response:", response);
 
       setSubmitted(true);
+      enqueueSnackbar("Grievance submitted successfully", { variant: "success" });
       setCategory("");
       setSubCategory("");
       setDescription("");
@@ -69,20 +72,13 @@ const SubmitGrievance: React.FC = () => {
 
       setTimeout(() => navigate("/auth/student-dashboard"), 2000);
     } catch (err: any) {
-      console.error("Submission failed:", err);
-
-      if (err?.response) {
-        const res = err.response;
-        const message =
-          typeof res.data === "string"
-            ? res.data
-            : res.data?.message ||
-              res.data?.error ||
-              "Server returned an error.";
-        setError(message);
-      } else {
-        setError("Failed to submit grievance. Please try again.");
-      }
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data ||
+        "Failed to submit grievance. Please try again.";
+      console.error("Submission failed:", message);
+      setError(message);
+      enqueueSnackbar(message, { variant: "error" });
     } finally {
       setLoading(false);
     }

@@ -5,10 +5,12 @@ import logo from "../../assets/logo.png";
 import authService from "../../services/authService";
 import axios from "axios";
 import LoadingOverlay from "../common/LoadingOverlay";
+import { useSnackbar } from "notistack";
 
 const VerifyAccount: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { enqueueSnackbar } = useSnackbar();
 
   // Get email from query params (passed from CreateAccount)
   const queryParams = new URLSearchParams(location.search);
@@ -30,16 +32,21 @@ const VerifyAccount: React.FC = () => {
     try {
       const res = await authService.verify(email, verificationCode);
       setMessage(res.message || "Account verified successfully!");
+      enqueueSnackbar("Account verified successfully", { variant: "success" });
       setTimeout(() => navigate("/auth/login"), 1500);
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         if (error.response?.data) {
-          setMessage(String(error.response.data));
+          const msg = String(error.response.data);
+          setMessage(msg);
+          enqueueSnackbar(msg, { variant: "error" });
         } else {
           setMessage("Network error. Please try again.");
+          enqueueSnackbar("Network error. Please try again.", { variant: "error" });
         }
       } else {
         setMessage("Unexpected error occurred during verification.");
+        enqueueSnackbar("Unexpected error occurred during verification.", { variant: "error" });
       }
     } finally {
       setLoading(false);
@@ -53,15 +60,20 @@ const VerifyAccount: React.FC = () => {
     try {
       const res = await authService.resend(email);
       setMessage(res.message || "Verification code resent successfully!");
+      enqueueSnackbar("Verification code resent successfully", { variant: "success" });
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         if (error.response?.data) {
-          setMessage(String(error.response.data));
+          const msg = String(error.response.data);
+          setMessage(msg);
+          enqueueSnackbar(msg, { variant: "error" });
         } else {
           setMessage("Network error while resending code.");
+          enqueueSnackbar("Network error while resending code.", { variant: "error" });
         }
       } else {
         setMessage("Unexpected error occurred while resending code.");
+        enqueueSnackbar("Unexpected error occurred while resending code.", { variant: "error" });
       }
     } finally {
       setLoading(false);
