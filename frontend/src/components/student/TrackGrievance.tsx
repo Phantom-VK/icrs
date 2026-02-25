@@ -182,6 +182,8 @@ const TrackGrievance: React.FC = () => {
               borderRadius: "6px",
               border: "1px solid #ccc",
               backgroundColor: "#fff",
+              color: "#000",
+              caretColor: "#000",
             }}
           />
         </div>
