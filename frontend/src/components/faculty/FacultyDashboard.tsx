@@ -40,6 +40,7 @@ const FacultyDashboard: React.FC = () => {
   const [commentInputs, setCommentInputs] = useState<Record<number, string>>({});
   const [commentLoading, setCommentLoading] = useState<Record<number, boolean>>({});
   const [commentError, setCommentError] = useState<Record<number, string>>({});
+  const [overlay, setOverlay] = useState(false);
 
   useEffect(() => {
     const fetchGrievances = async () => {
