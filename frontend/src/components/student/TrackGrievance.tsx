@@ -84,11 +84,16 @@ const TrackGrievance: React.FC = () => {
   }, [location.search]);
 
   const filteredGrievances = grievances.filter((g) => {
+    const term = searchTerm.toLowerCase();
+    const title = (g.title || "").toLowerCase();
+    const desc = (g.description || "").toLowerCase();
+    const category = (g.category || "").toLowerCase();
+    const regNo = (g.registrationNumber || "").toLowerCase();
     const matchesSearch =
-      g.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      g.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      g.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      g.registrationNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      title.includes(term) ||
+      desc.includes(term) ||
+      category.includes(term) ||
+      regNo.includes(term);
     const matchesStatus = filterStatus === "All" || g.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
