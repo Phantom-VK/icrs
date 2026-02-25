@@ -42,7 +42,7 @@ public class GrievanceMapper {
             dto.setCategoryId(grievance.getCategory().getId());
             dto.setCategoryName(grievance.getCategory().getName());
             dto.setCategory(grievance.getCategory().getName());
-            dto.setSensitiveCategory(grievance.getCategory().isSensitive());
+            dto.setSensitiveCategory(Boolean.TRUE.equals(grievance.getCategory().getSensitive()));
         }
         if (grievance.getSubcategory() != null) {
             dto.setSubcategoryId(grievance.getSubcategory().getId());
@@ -50,7 +50,7 @@ public class GrievanceMapper {
             dto.setSubcategory(grievance.getSubcategory().getName());
         }
         dto.setStatus(grievance.getStatus());
-        boolean hideIdentity = maskIdentity && grievance.getCategory() != null && grievance.getCategory().isHideIdentity();
+        boolean hideIdentity = maskIdentity && grievance.getCategory() != null && Boolean.TRUE.equals(grievance.getCategory().getHideIdentity());
         dto.setIdentityHidden(hideIdentity);
 
         if (hideIdentity) {
