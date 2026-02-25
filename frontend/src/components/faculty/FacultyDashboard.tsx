@@ -97,6 +97,7 @@ const FacultyDashboard: React.FC = () => {
     if (!newStatus) return;
 
     try {
+      setOverlay(true);
       await grievanceService.updateStatus(id, newStatus);
       setGrievances((prev) =>
         prev.map((g) => (g.id === id ? { ...g, status: newStatus } : g))
@@ -107,6 +108,8 @@ const FacultyDashboard: React.FC = () => {
       console.error("Update failed:", err);
       setError("Failed to update grievance.");
       setTimeout(() => setError(""), 2000);
+    } finally {
+      setOverlay(false);
     }
   };
 
@@ -147,6 +150,23 @@ const FacultyDashboard: React.FC = () => {
         alignItems: "flex-start",
       }}
     >
+      {overlay && (
+        <Box
+          sx={{
+            position: "fixed",
+            inset: 0,
+            bgcolor: "rgba(0,0,0,0.25)",
+            zIndex: 1500,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            fontWeight: 600,
+          }}
+        >
+          Processing...
+        </Box>
+      )}
       <Card sx={{ maxWidth: 1100, width: "100%", p: 3, position: "relative" }}>
         {/* Logout */}
         <Button

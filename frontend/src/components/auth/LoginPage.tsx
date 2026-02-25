@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import authService from "../../services/authService";
 import axios from "axios";
+import LoadingOverlay from "../common/LoadingOverlay";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -89,6 +90,7 @@ const handleLogin = async () => {
         alignItems: "center",
       }}
     >
+      <LoadingOverlay show={loading} message="Signing in..." />
       <Card
         sx={{
           width: "100%",

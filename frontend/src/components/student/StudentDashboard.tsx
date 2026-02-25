@@ -83,6 +83,22 @@ const StudentDashboard: React.FC = () => {
         color: "#000",
       }}
     >
+      {loading && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1200,
+            fontWeight: 600,
+          }}
+        >
+          Loading dashboard...
+        </div>
+      )}
       <div
         style={{
           width: "100%",

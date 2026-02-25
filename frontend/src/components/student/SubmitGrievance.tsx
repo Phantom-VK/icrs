@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import grievanceService from "../../services/grievanceService";
 import authService from "../../services/authService";
+import LoadingOverlay from "../common/LoadingOverlay";
 
 const categories = ["Academic", "Administrative", "Facilities", "Other"];
 const subCategories = ["Issue 1", "Issue 2", "Issue 3", "Other"];
@@ -99,6 +100,7 @@ const SubmitGrievance: React.FC = () => {
         alignItems: "center",
       }}
     >
+      <LoadingOverlay show={loading} message="Submitting grievance..." />
       <Card sx={{ maxWidth: 700, width: "100%", p: 3 }}>
         {/* Back Button */}
         <Button

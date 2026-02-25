@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import authService from "../../services/authService";
 import axios from "axios";
+import LoadingOverlay from "../common/LoadingOverlay";
 
 const VerifyAccount: React.FC = () => {
   const navigate = useNavigate();
@@ -83,6 +84,7 @@ const VerifyAccount: React.FC = () => {
         alignItems: "center",
       }}
     >
+      <LoadingOverlay show={loading} message="Processing..." />
       <Card sx={{ width: "100%", maxWidth: 400, p: 3 }}>
         <Box textAlign="center" mb={2}>
           <img src={logo} alt="College Logo" style={{ width: "100%", height: "auto" }} />

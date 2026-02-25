@@ -28,6 +28,8 @@ const TrackGrievance: React.FC = () => {
   const [commentLoadingMap, setCommentLoadingMap] = useState<Record<number, boolean>>({});
   const [commentErrorMap, setCommentErrorMap] = useState<Record<number, string>>({});
 
+  const [overlay, setOverlay] = useState(false);
+
   function loadComments(id: number) {
     if (commentMap[id]) return;
     setCommentLoadingMap((prev) => ({ ...prev, [id]: true }));
@@ -51,6 +53,7 @@ const TrackGrievance: React.FC = () => {
 
   useEffect(() => {
     const fetchGrievances = async () => {
+      setOverlay(true);
       try {
         console.log("Fetching grievances for logged-in student...");
         const data = await grievanceService.getMyGrievances();
@@ -73,6 +76,7 @@ const TrackGrievance: React.FC = () => {
         setError("Failed to load grievances. Please try again.");
       } finally {
         setLoading(false);
+        setOverlay(false);
       }
     };
     fetchGrievances();
@@ -110,6 +114,22 @@ const TrackGrievance: React.FC = () => {
         color: "#000",
       }}
     >
+      {overlay && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1200,
+            fontWeight: 600,
+          }}
+        >
+          Loading...
+        </div>
+      )}
       <div
         style={{
           width: "100%",

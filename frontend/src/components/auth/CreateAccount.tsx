@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import authService from "../../services/authService";
 import axios from "axios";
+import LoadingOverlay from "../common/LoadingOverlay";
 
 const CreateAccount: React.FC = () => {
   const navigate = useNavigate();
@@ -91,6 +92,7 @@ const CreateAccount: React.FC = () => {
         alignItems: "center",
       }}
     >
+      <LoadingOverlay show={loading} message="Creating account..." />
       <Card
         sx={{
           width: "100%",
