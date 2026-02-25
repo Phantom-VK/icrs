@@ -21,8 +21,11 @@ public class GrievanceResponseDTO {
     private String subcategoryName;
     private String subcategory;
     private String registrationNumber;
+    private String maskedRegistrationNumber;
     private Status status;
     private String studentName;
+    private boolean identityHidden;
+    private boolean sensitiveCategory;
     private String assignedToName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

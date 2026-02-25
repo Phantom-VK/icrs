@@ -78,7 +78,7 @@ public class GrievanceController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
         Page<Grievance> grievances = grievanceService.getAllGrievances(pageable);
-        return ResponseEntity.ok(grievances.map(grievanceMapper::toDTO));
+        return ResponseEntity.ok(grievances.map(g -> grievanceMapper.toDTO(g, true)));
     }
 
     /** Get specific grievance by ID */
@@ -86,7 +86,7 @@ public class GrievanceController {
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<GrievanceResponseDTO> getGrievanceById(@PathVariable Long id) {
         Grievance grievance = grievanceService.getGrievanceById(id);
-        return ResponseEntity.ok(grievanceMapper.toDTO(grievance));
+        return ResponseEntity.ok(grievanceMapper.toDTO(grievance, true));
     }
 
     /** Update grievance (Faculty/Admin) */
@@ -116,7 +116,7 @@ public class GrievanceController {
     public ResponseEntity<List<GrievanceResponseDTO>> getGrievancesByStudent(@PathVariable Long studentId) {
         List<Grievance> grievances = grievanceService.getGrievancesByStudent(studentId);
         List<GrievanceResponseDTO> dtoList = grievances.stream()
-                .map(grievanceMapper::toDTO)
+                .map(g -> grievanceMapper.toDTO(g, true))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtoList);
     }
@@ -154,7 +154,7 @@ public class GrievanceController {
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Grievance> grievances = grievanceService.getGrievancesByStatus(status, pageable);
-        return ResponseEntity.ok(grievances.map(grievanceMapper::toDTO));
+        return ResponseEntity.ok(grievances.map(g -> grievanceMapper.toDTO(g, true)));
     }
 
     /** Assign grievance to a faculty member */

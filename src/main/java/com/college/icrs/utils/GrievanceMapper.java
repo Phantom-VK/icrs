@@ -26,6 +26,10 @@ public class GrievanceMapper {
     }
 
     public GrievanceResponseDTO toDTO(Grievance grievance) {
+        return toDTO(grievance, false);
+    }
+
+    public GrievanceResponseDTO toDTO(Grievance grievance, boolean maskIdentity) {
         if (grievance == null) {
             return null;
         }
@@ -38,6 +42,7 @@ public class GrievanceMapper {
             dto.setCategoryId(grievance.getCategory().getId());
             dto.setCategoryName(grievance.getCategory().getName());
             dto.setCategory(grievance.getCategory().getName());
+            dto.setSensitiveCategory(grievance.getCategory().isSensitive());
         }
         if (grievance.getSubcategory() != null) {
             dto.setSubcategoryId(grievance.getSubcategory().getId());
@@ -45,9 +50,18 @@ public class GrievanceMapper {
             dto.setSubcategory(grievance.getSubcategory().getName());
         }
         dto.setStatus(grievance.getStatus());
-        dto.setRegistrationNumber(grievance.getRegistrationNumber());
+        boolean hideIdentity = maskIdentity && grievance.getCategory() != null && grievance.getCategory().isHideIdentity();
+        dto.setIdentityHidden(hideIdentity);
+
+        if (hideIdentity) {
+            dto.setRegistrationNumber(null);
+            dto.setMaskedRegistrationNumber("Hidden for compliance");
+        } else {
+            dto.setRegistrationNumber(grievance.getRegistrationNumber());
+            dto.setMaskedRegistrationNumber(grievance.getRegistrationNumber());
+        }
         // Map user names
-        if (grievance.getStudent() != null) {
+        if (grievance.getStudent() != null && !hideIdentity) {
             dto.setStudentName(grievance.getStudent().getUsername());
         }
         if (grievance.getAssignedTo() != null) {

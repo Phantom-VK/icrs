@@ -38,6 +38,8 @@ public class CategoryController {
         if (category.getDefaultAssignee() != null) {
             dto.setDefaultAssigneeName(category.getDefaultAssignee().getUsername());
         }
+        dto.setSensitive(category.isSensitive());
+        dto.setHideIdentity(category.isHideIdentity());
         if (category.getSubcategories() != null) {
             dto.setSubcategories(category.getSubcategories().stream().map(this::toDto).toList());
         }

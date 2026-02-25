@@ -12,6 +12,8 @@ public class CategoryResponseDTO {
     private String name;
     private String description;
     private String defaultAssigneeName;
+    private boolean sensitive;
+    private boolean hideIdentity;
     private List<SubcategoryResponseDTO> subcategories;
 
     @Getter

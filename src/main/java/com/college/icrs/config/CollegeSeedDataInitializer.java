@@ -27,6 +27,7 @@ public class CollegeSeedDataInitializer implements CommandLineRunner {
         User financeFaculty = ensureFaculty("finance@college.edu", "Finance Office");
         User disciplineFaculty = ensureFaculty("discipline@college.edu", "Discipline Cell");
         User examFaculty = ensureFaculty("examcell@college.edu", "Exam Cell");
+        User iccMember = ensureFaculty("icc@college.edu", "ICC Committee");
 
         // Categories with default assignees
         Category academic = ensureCategory("Academic", "Coursework, grades, attendance", faculty1);
@@ -36,6 +37,7 @@ public class CollegeSeedDataInitializer implements CommandLineRunner {
         Category finance = ensureCategory("Finance & Scholarships", "Fees, refunds, stipends, scholarships", financeFaculty);
         Category discipline = ensureCategory("Discipline & Safety", "Code of conduct, harassment, security", disciplineFaculty);
         Category examinations = ensureCategory("Examinations", "Timetable, hall tickets, revaluation", examFaculty);
+        Category posh = ensureSensitiveCategory("Harassment / PoSH", "PoSH complaints routed to ICC", iccMember);
 
         // Subcategories pointing to defaults
         ensureSubcategory("Exams", "Exam timetable, hall tickets", academic, examFaculty);
@@ -60,6 +62,9 @@ public class CollegeSeedDataInitializer implements CommandLineRunner {
         ensureSubcategory("Code of Conduct", "Ragging, harassment, misconduct", discipline, disciplineFaculty);
         ensureSubcategory("Security", "Campus security or safety concerns", discipline, disciplineFaculty);
 
+        ensureSubcategory("PoSH Complaint", "Sexual harassment / PoSH case", posh, iccMember);
+        ensureSubcategory("Ragging", "Ragging incidents", posh, iccMember);
+
         ensureSubcategory("Revaluation", "Revaluation / recounting requests", examinations, examFaculty);
         ensureSubcategory("Exam Schedule", "Timetable clashes or errors", examinations, examFaculty);
         ensureSubcategory("Hall Ticket", "Download / correction issues", examinations, examFaculty);
@@ -83,6 +88,18 @@ public class CollegeSeedDataInitializer implements CommandLineRunner {
             category.setName(name);
             category.setDescription(description);
             category.setDefaultAssignee(defaultAssignee);
+            return categoryRepository.save(category);
+        });
+    }
+
+    private Category ensureSensitiveCategory(String name, String description, User defaultAssignee) {
+        return categoryRepository.findByNameIgnoreCase(name).orElseGet(() -> {
+            Category category = new Category();
+            category.setName(name);
+            category.setDescription(description);
+            category.setDefaultAssignee(defaultAssignee);
+            category.setSensitive(true);
+            category.setHideIdentity(true);
             return categoryRepository.save(category);
         });
     }

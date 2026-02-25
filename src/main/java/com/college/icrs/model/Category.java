@@ -26,6 +26,12 @@ public class Category {
     @JoinColumn(name = "default_assignee_id")
     private User defaultAssignee;
 
+    @Column(name = "is_sensitive")
+    private boolean sensitive = false;
+
+    @Column(name = "hide_identity")
+    private boolean hideIdentity = false;
+
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Subcategory> subcategories = new HashSet<>();
 }
