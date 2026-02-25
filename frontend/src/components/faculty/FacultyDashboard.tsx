@@ -18,6 +18,7 @@ import type { Comment } from "../../services/grievanceService";
 import authService from "../../services/authService";
 import { useSnackbar } from "notistack";
 import type { StatusHistory } from "../../types/statusHistory";
+import { getActiveSortedGrievances } from "../../utils/grievanceFilters";
 
 interface Grievance {
   id: number;
@@ -217,10 +218,10 @@ const FacultyDashboard: React.FC = () => {
             <CircularProgress />
             <Typography>Loading grievances...</Typography>
           </Box>
-        ) : filteredGrievances.length === 0 ? (
-          <Typography>No grievances found.</Typography>
+        ) : getActiveSortedGrievances(filteredGrievances).length === 0 ? (
+          <Typography>No active grievances.</Typography>
         ) : (
-          filteredGrievances.map((g) => (
+          getActiveSortedGrievances(filteredGrievances).map((g) => (
             <Card
               key={g.id}
               sx={{ mb: 2, bgcolor: "#f5f5f5", cursor: "pointer" }}

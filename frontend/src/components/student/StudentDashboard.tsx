@@ -5,6 +5,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import logo from "../../assets/logo.png";
 import authService from "../../services/authService";
 import grievanceService from "../../services/grievanceService";
+import { getActiveSortedGrievances } from "../../utils/grievanceFilters";
 
 interface Grievance {
   id: number;
@@ -70,13 +71,7 @@ const StudentDashboard: React.FC = () => {
   const resolvedCount = grievances.filter((g) => g.status === "RESOLVED").length;
   const rejectedCount = grievances.filter((g) => g.status === "REJECTED").length;
 
-  const activeGrievances = grievances
-    .filter((g) => g.status === "SUBMITTED" || g.status === "IN_PROGRESS")
-    .sort((a, b) => {
-      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return bTime - aTime;
-    });
+  const activeGrievances = getActiveSortedGrievances(grievances);
 
   return (
     <div
