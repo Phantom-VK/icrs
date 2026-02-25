@@ -159,9 +159,10 @@ const FacultyDashboard: React.FC = () => {
             bgcolor: "rgba(0,0,0,0.25)",
             zIndex: 1500,
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-end",
             justifyContent: "center",
-            color: "#fff",
+            pb: 2,
+            color: "#000",
             fontWeight: 600,
           }}
         >

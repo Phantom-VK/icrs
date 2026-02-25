@@ -121,10 +121,12 @@ const TrackGrievance: React.FC = () => {
             inset: 0,
             background: "rgba(0,0,0,0.2)",
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-end",
             justifyContent: "center",
+            paddingBottom: "20px",
             zIndex: 1200,
             fontWeight: 600,
+            color: "#000",
           }}
         >
           Loading...
