@@ -9,17 +9,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TestDataInitializer implements CommandLineRunner {
+public class CollegeSeedDataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CategoryRepository categoryRepository;
     private final SubcategoryRepository subcategoryRepository;
 
-    public TestDataInitializer(UserRepository userRepository,
-                               PasswordEncoder passwordEncoder,
-                               CategoryRepository categoryRepository,
-                               SubcategoryRepository subcategoryRepository) {
+    public CollegeSeedDataInitializer(UserRepository userRepository,
+                                      PasswordEncoder passwordEncoder,
+                                      CategoryRepository categoryRepository,
+                                      SubcategoryRepository subcategoryRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.categoryRepository = categoryRepository;
