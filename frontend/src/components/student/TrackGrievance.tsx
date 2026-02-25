@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import grievanceService from "../../services/grievanceService";
 import type { Comment } from "../../services/grievanceService";
+import { useDebounce } from "../../utils/useDebounce";
 
 interface Grievance {
   id: number;
@@ -29,6 +30,7 @@ const TrackGrievance: React.FC = () => {
   const [commentErrorMap, setCommentErrorMap] = useState<Record<number, string>>({});
 
   const [overlay, setOverlay] = useState(false);
+  const debouncedSearch = useDebounce(searchTerm, 250);
 
   function loadComments(id: number) {
     if (commentMap[id]) return;
@@ -84,7 +86,7 @@ const TrackGrievance: React.FC = () => {
   }, [location.search]);
 
   const filteredGrievances = grievances.filter((g) => {
-    const term = searchTerm.toLowerCase();
+    const term = debouncedSearch.toLowerCase();
     const title = (g.title || "").toLowerCase();
     const desc = (g.description || "").toLowerCase();
     const category = (g.category || "").toLowerCase();
@@ -254,7 +256,16 @@ const TrackGrievance: React.FC = () => {
                   }}
                 >
                   <strong>{g.title}</strong>
-                  <span style={{ color: statusColors[g.status] }}>
+                  <span
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: "8px",
+                      backgroundColor: "#f0f0f0",
+                      color: statusColors[g.status],
+                      fontSize: "12px",
+                      fontWeight: 600,
+                    }}
+                  >
                     {g.status.replace("_", " ")}
                   </span>
                 </div>
