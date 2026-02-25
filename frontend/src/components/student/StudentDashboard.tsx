@@ -12,6 +12,7 @@ interface Grievance {
   description: string;
   category: string;
   status: "SUBMITTED" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
+  createdAt?: string;
 }
 
 const StudentDashboard: React.FC = () => {
@@ -68,6 +69,14 @@ const StudentDashboard: React.FC = () => {
   const pendingCount = grievances.filter((g) => g.status === "SUBMITTED").length;
   const resolvedCount = grievances.filter((g) => g.status === "RESOLVED").length;
   const rejectedCount = grievances.filter((g) => g.status === "REJECTED").length;
+
+  const activeGrievances = grievances
+    .filter((g) => g.status === "SUBMITTED" || g.status === "IN_PROGRESS")
+    .sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
 
   return (
     <div
@@ -198,11 +207,11 @@ const StudentDashboard: React.FC = () => {
             <p>Loading grievances...</p>
           ) : error ? (
             <p style={{ color: "red" }}>{error}</p>
-          ) : grievances.length === 0 ? (
-            <p>No grievances found.</p>
+          ) : activeGrievances.length === 0 ? (
+            <p>No active grievances. Submit a new one to get started.</p>
           ) : (
             <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-          {grievances.map((g) => (
+          {activeGrievances.map((g) => (
             <li
               key={g.id}
               onClick={() => toggleExpand(g.id)}

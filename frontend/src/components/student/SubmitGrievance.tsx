@@ -29,6 +29,7 @@ const SubmitGrievance: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const [userLoading, setUserLoading] = useState(false);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -47,6 +48,23 @@ const SubmitGrievance: React.FC = () => {
     loadCategories();
   }, [enqueueSnackbar]);
 
+  useEffect(() => {
+    const loadUser = async () => {
+      setUserLoading(true);
+      try {
+        const user = await authService.getCurrentUser();
+        if (user?.studentId) {
+          setRegistrationNumber(user.studentId);
+        }
+      } catch (err: any) {
+        console.warn("Could not fetch user for registration number", err);
+      } finally {
+        setUserLoading(false);
+      }
+    };
+    loadUser();
+  }, []);
+
   const currentSubcategories: Subcategory[] = useMemo(() => {
     const cat = categories.find((c) => c.id === categoryId);
     return cat?.subcategories || [];
@@ -56,8 +74,13 @@ const SubmitGrievance: React.FC = () => {
     setError(null);
     setSubmitted(false);
 
-    if (!categoryId || !description || !registrationNumber) {
+    if (!categoryId || !description) {
       setError("Please fill in all required fields.");
+      return;
+    }
+
+    if (!registrationNumber) {
+      setError("Could not fetch your registration number. Please re-login and try again.");
       return;
     }
 
@@ -92,7 +115,6 @@ const SubmitGrievance: React.FC = () => {
       setCategoryId("");
       setSubCategoryId("");
       setDescription("");
-      setRegistrationNumber("");
 
       setTimeout(() => navigate("/auth/student-dashboard"), 2000);
     } catch (err: any) {
@@ -221,7 +243,14 @@ const SubmitGrievance: React.FC = () => {
             label="Registration Number"
             margin="normal"
             value={registrationNumber}
-            onChange={(e) => setRegistrationNumber(e.target.value)}
+            InputProps={{ readOnly: true }}
+            helperText={
+              userLoading
+                ? "Fetching your registration number..."
+                : registrationNumber
+                ? "Fetched from your profile"
+                : "We could not fetch your registration number; please re-login."
+            }
           />
 
           <Button
