@@ -51,6 +51,36 @@ public class Grievance {
     @Enumerated(EnumType.STRING)
     private Status status;
 
+    @Enumerated(EnumType.STRING)
+    private Priority priority;
+
+    @Enumerated(EnumType.STRING)
+    private Sentiment sentiment;
+
+    @Column(name = "ai_resolved", nullable = false)
+    private boolean aiResolved = false;
+
+    @Column(name = "ai_confidence")
+    private Double aiConfidence;
+
+    @Column(name = "ai_title")
+    private String aiTitle;
+
+    @Column(name = "ai_resolution_text", columnDefinition = "TEXT")
+    private String aiResolutionText;
+
+    @Column(name = "ai_resolution_comment", columnDefinition = "TEXT")
+    private String aiResolutionComment;
+
+    @Column(name = "ai_model_name")
+    private String aiModelName;
+
+    @Column(name = "ai_decision_at")
+    private LocalDateTime aiDecisionAt;
+
+    @Column(name = "ai_decision_source")
+    private String aiDecisionSource;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

@@ -1,5 +1,7 @@
 package com.college.icrs.dto;
 
+import com.college.icrs.model.Priority;
+import com.college.icrs.model.Sentiment;
 import com.college.icrs.model.Status;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,6 +25,16 @@ public class GrievanceResponseDTO {
     private String registrationNumber;
     private String maskedRegistrationNumber;
     private Status status;
+    private Priority priority;
+    private Sentiment sentiment;
+    private boolean aiResolved;
+    private Double aiConfidence;
+    private String aiTitle;
+    private String aiResolutionText;
+    private String aiResolutionComment;
+    private String aiModelName;
+    private LocalDateTime aiDecisionAt;
+    private String aiDecisionSource;
     private String studentName;
     private boolean identityHidden;
     private boolean sensitiveCategory;

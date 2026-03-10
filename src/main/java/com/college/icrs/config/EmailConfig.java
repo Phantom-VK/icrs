@@ -20,11 +20,11 @@ public class EmailConfig {
     private String password;
 
 
-    @PostConstruct
-    public void verify() {
-        System.out.println("Email username: " + emailUsername);
-        System.out.println("Email password: " + (password != null ? "*******" : "null"));
-    }
+//    @PostConstruct
+//    public void verify() {
+//        System.out.println("Email username: " + emailUsername);
+//        System.out.println("Email password: " + (password != null ? "*******" : "null"));
+//    }
 
 
     @Bean
