@@ -19,6 +19,8 @@ public class CollegeSeedDataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        ensureAiSystemUser();
+
         // Faculty pool
         User faculty1 = ensureFaculty("faculty@college.edu", "Academic Desk");
         User faculty2 = ensureFaculty("faculty2@college.edu", "Admin Desk");
@@ -79,6 +81,20 @@ public class CollegeSeedDataInitializer implements CommandLineRunner {
             faculty.setRole(Role.FACULTY);
             faculty.setEnabled(true);
             return userRepository.save(faculty);
+        });
+    }
+
+    private User ensureAiSystemUser() {
+        return userRepository.findByEmail("ai.system@icrs.local").orElseGet(() -> {
+            User aiSystem = new User();
+            aiSystem.setUsername("AI System");
+            aiSystem.setEmail("ai.system@icrs.local");
+            aiSystem.setPassword(passwordEncoder.encode("ai-system-disabled-login"));
+            aiSystem.setRole(Role.ADMIN);
+            aiSystem.setEnabled(true);
+            aiSystem.setDepartment("SYSTEM");
+            aiSystem.setStudentId("AI_SYSTEM");
+            return userRepository.save(aiSystem);
         });
     }
 
