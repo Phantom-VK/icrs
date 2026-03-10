@@ -1,0 +1,2 @@
+-- Baseline migration for Flyway adoption in an existing Hibernate-managed schema.
+-- Intentionally no-op.
