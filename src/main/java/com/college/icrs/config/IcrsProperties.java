@@ -13,6 +13,7 @@ public class IcrsProperties {
 
     private final Cors cors = new Cors();
     private final Files files = new Files();
+    private final Ai ai = new Ai();
 
     @Setter
     @Getter
@@ -26,5 +27,28 @@ public class IcrsProperties {
     public static class Files {
         private List<String> allowedMimeTypes = new ArrayList<>();
 
+    }
+
+    @Setter
+    @Getter
+    public static class Ai {
+        private boolean enabled = false;
+        private double autoResolveConfidenceThreshold = 0.80d;
+        private int maxDescriptionChars = 4000;
+        private String systemUserEmail = "ai.system@icrs.local";
+        private String decisionSource = "DEEPSEEK_AGENTIC_V1";
+        private boolean addSystemCommentOnManualReview = true;
+        private final Sentiment sentiment = new Sentiment();
+    }
+
+    @Setter
+    @Getter
+    public static class Sentiment {
+        private boolean enabled = false;
+        private String baseUrl = "http://localhost:8090";
+        private int timeoutMs = 3000;
+        private double veryNegativeThreshold = 0.85d;
+        private double neutralBandUpper = 0.60d;
+        private String modelName = "siebert/sentiment-roberta-large-english";
     }
 }

@@ -1,5 +1,6 @@
 package com.college.icrs.controller;
 
+import com.college.icrs.ai.service.AgenticAiService;
 import com.college.icrs.dto.GrievanceRequestDTO;
 import com.college.icrs.dto.GrievanceResponseDTO;
 import com.college.icrs.dto.CommentRequestDTO;
@@ -36,6 +37,7 @@ public class GrievanceController {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final SubcategoryRepository subcategoryRepository;
+    private final AgenticAiService agenticAiService;
 
     /** Create a new grievance (Student submission) */
     @PostMapping
@@ -58,10 +60,17 @@ public class GrievanceController {
         Grievance grievance = grievanceMapper.toEntity(grievanceDTO);
         applyCategorySelections(grievanceDTO, grievance);
         Grievance createdGrievance = grievanceService.createGrievance(grievance, user.getId());
+        Grievance finalGrievance = createdGrievance;
+        try {
+            finalGrievance = agenticAiService.processNewGrievance(createdGrievance.getId());
+        } catch (Exception e) {
+            // Preserve core grievance creation even if AI processing fails.
+            System.err.println("AI pipeline failed for grievance " + createdGrievance.getId() + ": " + e.getMessage());
+        }
 
-        System.out.println("Grievance created with ID: " + createdGrievance.getId());
+        System.out.println("Grievance created with ID: " + finalGrievance.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(grievanceMapper.toDTO(createdGrievance));
+                .body(grievanceMapper.toDTO(finalGrievance));
     }
 
     /** Get all grievances (Faculty/Admin) */

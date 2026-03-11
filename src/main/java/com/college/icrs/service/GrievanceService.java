@@ -177,6 +177,28 @@ public class GrievanceService {
         return grievanceRepository.save(grievance);
     }
 
+    public Grievance updateAiRecommendation(
+            Long grievanceId,
+            String aiResolutionText,
+            String aiResolutionComment,
+            Double aiConfidence,
+            String aiModelName,
+            String aiDecisionSource,
+            LocalDateTime aiDecisionAt
+    ) {
+        Grievance grievance = getGrievanceById(grievanceId);
+        grievance.setAiResolved(false);
+        grievance.setAiResolutionText(aiResolutionText);
+        grievance.setAiResolutionComment(aiResolutionComment);
+        if (aiConfidence != null) {
+            grievance.setAiConfidence(aiConfidence);
+        }
+        grievance.setAiModelName(aiModelName);
+        grievance.setAiDecisionSource(aiDecisionSource);
+        grievance.setAiDecisionAt(aiDecisionAt != null ? aiDecisionAt : LocalDateTime.now());
+        return grievanceRepository.save(grievance);
+    }
+
     public Grievance markResolvedByAi(
             Long grievanceId,
             String aiResolutionText,
@@ -201,6 +223,34 @@ public class GrievanceService {
         appendStatusHistory(saved, fromStatus, Status.RESOLVED, "Resolved by AI");
         trySendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, Status.RESOLVED);
         return saved;
+    }
+
+    public com.college.icrs.dto.CommentResponseDTO addSystemComment(
+            Long grievanceId,
+            String systemAuthorEmail,
+            String body
+    ) {
+        Grievance grievance = getGrievanceById(grievanceId);
+        User author = userRepository.findByEmail(systemAuthorEmail)
+                .orElseThrow(() -> new RuntimeException("System author not found"));
+
+        if (author.getRole() == com.college.icrs.model.Role.STUDENT) {
+            throw new RuntimeException("System author must not be a student");
+        }
+
+        Comment comment = new Comment();
+        comment.setGrievance(grievance);
+        comment.setAuthor(author);
+        comment.setBody(body);
+
+        Comment saved = commentRepository.save(comment);
+        com.college.icrs.dto.CommentResponseDTO dto = new com.college.icrs.dto.CommentResponseDTO();
+        dto.setId(saved.getId());
+        dto.setBody(saved.getBody());
+        dto.setAuthorName(author.getUsername());
+        dto.setAuthorEmail(author.getEmail());
+        dto.setCreatedAt(saved.getCreatedAt());
+        return dto;
     }
 
     public com.college.icrs.dto.CommentResponseDTO addComment(Long grievanceId, String authorEmail, String body) {
