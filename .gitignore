@@ -40,3 +40,5 @@ out/
 
 # Local documents/artifacts
 documents/*.pdf
+/documents/ICRS Agentic Plan.md
+/documents/ICRS.tex

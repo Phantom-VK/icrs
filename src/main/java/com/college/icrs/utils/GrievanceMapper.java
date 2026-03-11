@@ -50,6 +50,16 @@ public class GrievanceMapper {
             dto.setSubcategory(grievance.getSubcategory().getName());
         }
         dto.setStatus(grievance.getStatus());
+        dto.setPriority(grievance.getPriority());
+        dto.setSentiment(grievance.getSentiment());
+        dto.setAiResolved(grievance.isAiResolved());
+        dto.setAiConfidence(grievance.getAiConfidence());
+        dto.setAiTitle(grievance.getAiTitle());
+        dto.setAiResolutionText(grievance.getAiResolutionText());
+        dto.setAiResolutionComment(grievance.getAiResolutionComment());
+        dto.setAiModelName(grievance.getAiModelName());
+        dto.setAiDecisionAt(grievance.getAiDecisionAt());
+        dto.setAiDecisionSource(grievance.getAiDecisionSource());
         boolean hideIdentity = maskIdentity && grievance.getCategory() != null && Boolean.TRUE.equals(grievance.getCategory().getHideIdentity());
         dto.setIdentityHidden(hideIdentity);
 

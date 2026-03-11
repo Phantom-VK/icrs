@@ -1,6 +1,8 @@
 package com.college.icrs.repository;
 
 import com.college.icrs.model.Grievance;
+import com.college.icrs.model.Priority;
+import com.college.icrs.model.Sentiment;
 import com.college.icrs.model.Status;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,4 +23,16 @@ public interface GrievanceRepository extends JpaRepository<Grievance, Long> {
     List<Grievance> findByAssignedToId(Long facultyId);
 
     List<Grievance> findByTitleContainingIgnoreCase(String title);
+
+    List<Grievance> findByTitleContainingIgnoreCaseOrAiTitleContainingIgnoreCase(String title, String aiTitle);
+
+    Page<Grievance> findByAiResolved(boolean aiResolved, Pageable pageable);
+
+    Page<Grievance> findByPriority(Priority priority, Pageable pageable);
+
+    Page<Grievance> findBySentiment(Sentiment sentiment, Pageable pageable);
+
+    long countByAiResolvedTrue();
+
+    long countByAiResolvedFalse();
 }

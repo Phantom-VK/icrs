@@ -1,6 +1,8 @@
 package com.college.icrs.service;
 
 import com.college.icrs.model.Grievance;
+import com.college.icrs.model.Priority;
+import com.college.icrs.model.Sentiment;
 import com.college.icrs.model.Status;
 import com.college.icrs.model.StatusHistory;
 import com.college.icrs.model.User;
@@ -9,12 +11,12 @@ import com.college.icrs.repository.GrievanceRepository;
 import com.college.icrs.repository.StatusHistoryRepository;
 import com.college.icrs.repository.UserRepository;
 import com.college.icrs.repository.CommentRepository;
-import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +38,7 @@ public class GrievanceService {
 
         grievance.setStudent(student);
         grievance.setStatus(Status.SUBMITTED);
+        initializeAiFieldsForNewGrievance(grievance);
 
         // auto-assign to default assignee if present on subcategory or category
         if (grievance.getAssignedTo() == null && grievance.getSubcategory() != null && grievance.getSubcategory().getDefaultAssignee() != null) {
@@ -71,7 +74,9 @@ public class GrievanceService {
         grievance.setCategory(grievanceDetails.getCategory());
         grievance.setSubcategory(grievanceDetails.getSubcategory());
         if (grievanceDetails.getStatus() != null) {
-            grievance.setStatus(grievanceDetails.getStatus());
+            Status targetStatus = grievanceDetails.getStatus();
+            reconcileAiFlagsForManualStatusChange(grievance, targetStatus);
+            grievance.setStatus(targetStatus);
         }
 
         return grievanceRepository.save(grievance);
@@ -95,6 +100,18 @@ public class GrievanceService {
         return grievanceRepository.findByStatus(status, pageable);
     }
 
+    public Page<Grievance> getGrievancesByPriority(Priority priority, Pageable pageable) {
+        return grievanceRepository.findByPriority(priority, pageable);
+    }
+
+    public Page<Grievance> getGrievancesBySentiment(Sentiment sentiment, Pageable pageable) {
+        return grievanceRepository.findBySentiment(sentiment, pageable);
+    }
+
+    public Page<Grievance> getAiResolvedGrievances(boolean aiResolved, Pageable pageable) {
+        return grievanceRepository.findByAiResolved(aiResolved, pageable);
+    }
+
     public List<Grievance> getGrievancesByCategoryAndStatus(Long categoryId, Status status) {
         return grievanceRepository.findByCategoryIdAndStatus(categoryId, status);
     }
@@ -108,6 +125,7 @@ public class GrievanceService {
         User faculty = userRepository.findById(facultyId)
                 .orElseThrow(() -> new RuntimeException("Faculty not found with id: " + facultyId));
 
+        reconcileAiFlagsForManualStatusChange(grievance, Status.IN_PROGRESS);
         grievance.setAssignedTo(faculty);
         grievance.setStatus(Status.IN_PROGRESS);
         Grievance updated = grievanceRepository.save(grievance);
@@ -118,14 +136,10 @@ public class GrievanceService {
     public Grievance updateGrievanceStatus(Long grievanceId, Status status) {
         Grievance grievance = getGrievanceById(grievanceId);
         Status fromStatus = grievance.getStatus();
+        reconcileAiFlagsForManualStatusChange(grievance, status);
         grievance.setStatus(status);
         Grievance saved = grievanceRepository.save(grievance);
-
-        StatusHistory history = new StatusHistory();
-        history.setGrievance(saved);
-        history.setFromStatus(fromStatus);
-        history.setToStatus(status);
-        statusHistoryRepository.save(history);
+        appendStatusHistory(saved, fromStatus, status, null);
 
         trySendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, status);
         return saved;
@@ -133,8 +147,60 @@ public class GrievanceService {
 
     public Grievance resolveGrievance(Long grievanceId) {
         Grievance grievance = getGrievanceById(grievanceId);
+        Status fromStatus = grievance.getStatus();
+        grievance.setAiResolved(false);
         grievance.setStatus(Status.RESOLVED);
+        Grievance saved = grievanceRepository.save(grievance);
+        appendStatusHistory(saved, fromStatus, Status.RESOLVED, "Resolved manually");
+        return saved;
+    }
+
+    public Grievance applyAiDecisionMetadata(
+            Long grievanceId,
+            Priority priority,
+            Sentiment sentiment,
+            String aiTitle,
+            Double aiConfidence,
+            String aiModelName,
+            String aiDecisionSource,
+            LocalDateTime aiDecisionAt
+    ) {
+        Grievance grievance = getGrievanceById(grievanceId);
+        grievance.setPriority(priority);
+        grievance.setSentiment(sentiment);
+        grievance.setAiTitle(aiTitle);
+        grievance.setAiConfidence(aiConfidence);
+        grievance.setAiModelName(aiModelName);
+        grievance.setAiDecisionSource(aiDecisionSource);
+        grievance.setAiDecisionAt(aiDecisionAt != null ? aiDecisionAt : LocalDateTime.now());
+        grievance.setAiResolved(false);
         return grievanceRepository.save(grievance);
+    }
+
+    public Grievance markResolvedByAi(
+            Long grievanceId,
+            String aiResolutionText,
+            String aiResolutionComment,
+            Double aiConfidence,
+            String aiModelName,
+            String aiDecisionSource
+    ) {
+        Grievance grievance = getGrievanceById(grievanceId);
+        Status fromStatus = grievance.getStatus();
+
+        grievance.setAiResolved(true);
+        grievance.setAiResolutionText(aiResolutionText);
+        grievance.setAiResolutionComment(aiResolutionComment);
+        grievance.setAiConfidence(aiConfidence);
+        grievance.setAiModelName(aiModelName);
+        grievance.setAiDecisionSource(aiDecisionSource);
+        grievance.setAiDecisionAt(LocalDateTime.now());
+        grievance.setStatus(Status.RESOLVED);
+
+        Grievance saved = grievanceRepository.save(grievance);
+        appendStatusHistory(saved, fromStatus, Status.RESOLVED, "Resolved by AI");
+        trySendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, Status.RESOLVED);
+        return saved;
     }
 
     public com.college.icrs.dto.CommentResponseDTO addComment(Long grievanceId, String authorEmail, String body) {
@@ -200,19 +266,51 @@ public class GrievanceService {
     }
 
     public List<Grievance> searchGrievancesByTitle(String title) {
-        return grievanceRepository.findAll().stream()
-                .filter(g -> g.getTitle() != null &&
-                        g.getTitle().toLowerCase().contains(title.toLowerCase()))
-                .toList();
+        return grievanceRepository.findByTitleContainingIgnoreCaseOrAiTitleContainingIgnoreCase(title, title);
     }
 
     public Map<String, Long> getGrievanceStatistics() {
         Map<String, Long> stats = new HashMap<>();
+        long resolvedCount = grievanceRepository.findByStatus(Status.RESOLVED, Pageable.unpaged()).getTotalElements();
+        long aiResolvedCount = grievanceRepository.countByAiResolvedTrue();
         stats.put("total", grievanceRepository.count());
         stats.put("submitted", grievanceRepository.findByStatus(Status.SUBMITTED, Pageable.unpaged()).getTotalElements());
         stats.put("inProgress", grievanceRepository.findByStatus(Status.IN_PROGRESS, Pageable.unpaged()).getTotalElements());
-        stats.put("resolved", grievanceRepository.findByStatus(Status.RESOLVED, Pageable.unpaged()).getTotalElements());
+        stats.put("resolved", resolvedCount);
+        stats.put("aiResolved", aiResolvedCount);
+        stats.put("humanResolved", Math.max(resolvedCount - aiResolvedCount, 0));
         return stats;
+    }
+
+    private void initializeAiFieldsForNewGrievance(Grievance grievance) {
+        grievance.setPriority(null);
+        grievance.setSentiment(null);
+        grievance.setAiResolved(false);
+        grievance.setAiConfidence(null);
+        grievance.setAiTitle(null);
+        grievance.setAiResolutionText(null);
+        grievance.setAiResolutionComment(null);
+        grievance.setAiModelName(null);
+        grievance.setAiDecisionAt(null);
+        grievance.setAiDecisionSource(null);
+    }
+
+    private void reconcileAiFlagsForManualStatusChange(Grievance grievance, Status targetStatus) {
+        if (targetStatus != Status.RESOLVED) {
+            grievance.setAiResolved(false);
+        }
+    }
+
+    private void appendStatusHistory(Grievance grievance, Status fromStatus, Status toStatus, String reason) {
+        if (fromStatus == toStatus) {
+            return;
+        }
+        StatusHistory history = new StatusHistory();
+        history.setGrievance(grievance);
+        history.setFromStatus(fromStatus);
+        history.setToStatus(toStatus);
+        history.setReason(reason);
+        statusHistoryRepository.save(history);
     }
 
     private void trySendSubmissionEmail(User student, Grievance grievance) {
