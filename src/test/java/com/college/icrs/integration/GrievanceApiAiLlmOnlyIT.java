@@ -1,6 +1,5 @@
 package com.college.icrs.integration;
 
-import com.college.icrs.model.Category;
 import com.college.icrs.model.Status;
 import com.college.icrs.repository.StatusHistoryRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -38,15 +37,15 @@ class GrievanceApiAiLlmOnlyIT extends GrievanceApiIntegrationTestSupport {
         Mockito.when(chatModel.chat(Mockito.anyString())).thenReturn("not-json");
 
         String token = loginAndGetBearerToken();
-        Category category = createCategory(false, false, "AI-FAILSAFE");
+        long categoryId = getCatalogCategoryIdByName("Finance & Scholarships");
         JsonNode grievance = submitGrievance(
                 token,
-                category.getId(),
+                categoryId,
                 "Mess food concern",
                 "Food quality is inconsistent and needs review"
         );
 
-        assertEquals("SUBMITTED", grievance.path("status").asText());
+        assertEquals("IN_PROGRESS", grievance.path("status").asText());
         assertFalse(grievance.path("aiResolved").asBoolean(true));
         assertTrue(grievance.path("aiDecisionAt").isNull() || grievance.path("aiDecisionAt").asText().isBlank());
     }
@@ -81,11 +80,11 @@ class GrievanceApiAiLlmOnlyIT extends GrievanceApiIntegrationTestSupport {
         });
 
         String token = loginAndGetBearerToken();
-        Category category = createCategory(false, false, "AI-AUTO-RESOLVE");
+        long categoryId = getCatalogCategoryIdByName("IT Support");
 
         JsonNode grievance = submitGrievance(
                 token,
-                category.getId(),
+                categoryId,
                 "WiFi access issue",
                 "My hostel WiFi disconnects every 10 minutes."
         );

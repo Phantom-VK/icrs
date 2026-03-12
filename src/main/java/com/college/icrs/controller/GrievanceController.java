@@ -11,8 +11,7 @@ import com.college.icrs.model.User;
 import com.college.icrs.model.Category;
 import com.college.icrs.model.Subcategory;
 import com.college.icrs.repository.UserRepository;
-import com.college.icrs.repository.CategoryRepository;
-import com.college.icrs.repository.SubcategoryRepository;
+import com.college.icrs.service.CategoryCatalogService;
 import com.college.icrs.service.GrievanceService;
 import com.college.icrs.utils.GrievanceMapper;
 import jakarta.validation.Valid;
@@ -35,8 +34,7 @@ public class GrievanceController {
     private final GrievanceService grievanceService;
     private final GrievanceMapper grievanceMapper;
     private final UserRepository userRepository;
-    private final CategoryRepository categoryRepository;
-    private final SubcategoryRepository subcategoryRepository;
+    private final CategoryCatalogService categoryCatalogService;
     private final AgenticAiService agenticAiService;
 
     /** Create a new grievance (Student submission) */
@@ -221,22 +219,21 @@ public class GrievanceController {
     }
 
     private void applyCategorySelections(GrievanceRequestDTO grievanceDTO, Grievance grievance) {
-        if (grievanceDTO.getCategoryId() != null) {
-            Category category = categoryRepository.findById(grievanceDTO.getCategoryId())
-                    .orElseThrow(() -> new java.util.NoSuchElementException("Category not found"));
+        if (grievanceDTO.getCategoryId() != null || grievanceDTO.getCategory() != null) {
+            Category category = categoryCatalogService.resolveCategory(
+                    grievanceDTO.getCategoryId(),
+                    grievanceDTO.getCategory()
+            );
             grievance.setCategory(category);
-        } else if (grievanceDTO.getCategory() != null) {
-            categoryRepository.findByNameIgnoreCase(grievanceDTO.getCategory())
-                    .ifPresent(grievance::setCategory);
         }
 
-        if (grievanceDTO.getSubcategoryId() != null) {
-            Subcategory subcategory = subcategoryRepository.findById(grievanceDTO.getSubcategoryId())
-                    .orElseThrow(() -> new java.util.NoSuchElementException("Subcategory not found"));
+        if ((grievanceDTO.getSubcategoryId() != null || grievanceDTO.getSubcategory() != null) && grievance.getCategory() != null) {
+            Subcategory subcategory = categoryCatalogService.resolveSubcategory(
+                    grievance.getCategory(),
+                    grievanceDTO.getSubcategoryId(),
+                    grievanceDTO.getSubcategory()
+            );
             grievance.setSubcategory(subcategory);
-        } else if (grievanceDTO.getSubcategory() != null && grievance.getCategory() != null) {
-            subcategoryRepository.findByNameIgnoreCaseAndCategoryId(grievanceDTO.getSubcategory(), grievance.getCategory().getId())
-                    .ifPresent(grievance::setSubcategory);
         }
     }
 }

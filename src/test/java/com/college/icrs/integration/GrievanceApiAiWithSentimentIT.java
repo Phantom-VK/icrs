@@ -1,7 +1,6 @@
 package com.college.icrs.integration;
 
 import com.college.icrs.ai.service.SentimentAnalysisService;
-import com.college.icrs.model.Category;
 import com.college.icrs.model.Sentiment;
 import com.college.icrs.repository.StatusHistoryRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -68,11 +67,11 @@ class GrievanceApiAiWithSentimentIT extends GrievanceApiIntegrationTestSupport {
         });
 
         String token = loginAndGetBearerToken();
-        Category category = createCategory(false, false, "AI-SENTIMENT");
+        long categoryId = getCatalogCategoryIdByName("Hostel & Accommodation");
 
         JsonNode grievance = submitGrievance(
                 token,
-                category.getId(),
+                categoryId,
                 "Hostel hygiene concern",
                 "Washroom cleaning has been delayed multiple times this week."
         );
@@ -116,11 +115,11 @@ class GrievanceApiAiWithSentimentIT extends GrievanceApiIntegrationTestSupport {
         });
 
         String token = loginAndGetBearerToken();
-        Category sensitive = createCategory(true, true, "AI-SENSITIVE");
+        long categoryId = getCatalogCategoryIdByName("Harassment / PoSH");
 
         JsonNode grievance = submitGrievance(
                 token,
-                sensitive.getId(),
+                categoryId,
                 "Sensitive issue",
                 "This is a sensitive grievance that must not be auto-resolved."
         );

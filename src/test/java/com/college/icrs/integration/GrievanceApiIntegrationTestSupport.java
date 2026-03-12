@@ -1,9 +1,7 @@
 package com.college.icrs.integration;
 
-import com.college.icrs.model.Category;
 import com.college.icrs.model.Role;
 import com.college.icrs.model.User;
-import com.college.icrs.repository.CategoryRepository;
 import com.college.icrs.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,8 +11,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-
-import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -36,9 +32,6 @@ public abstract class GrievanceApiIntegrationTestSupport {
 
     @Autowired
     protected PasswordEncoder passwordEncoder;
-
-    @Autowired
-    protected CategoryRepository categoryRepository;
 
     protected String loginAndGetBearerToken() throws Exception {
         ensureAiSystemUser();
@@ -64,13 +57,23 @@ public abstract class GrievanceApiIntegrationTestSupport {
         return token;
     }
 
-    protected Category createCategory(boolean sensitive, boolean hideIdentity, String prefix) {
-        Category category = new Category();
-        category.setName(prefix + "-" + UUID.randomUUID());
-        category.setDescription("Test category for integration checks");
-        category.setSensitive(sensitive);
-        category.setHideIdentity(hideIdentity);
-        return categoryRepository.save(category);
+    protected long getCatalogCategoryIdByName(String categoryName) throws Exception {
+        JsonNode categories = getCategories();
+        for (JsonNode category : categories) {
+            if (categoryName.equalsIgnoreCase(category.path("name").asText())) {
+                return category.path("id").asLong();
+            }
+        }
+
+        throw new IllegalArgumentException("Catalog category not found: " + categoryName);
+    }
+
+    protected JsonNode getCategories() throws Exception {
+        MvcResult result = mockMvc.perform(get("/categories"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        return objectMapper.readTree(result.getResponse().getContentAsString());
     }
 
     protected JsonNode submitGrievance(String token, Long categoryId, String title, String description) throws Exception {

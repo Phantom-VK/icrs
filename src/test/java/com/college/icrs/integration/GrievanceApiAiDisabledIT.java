@@ -1,6 +1,5 @@
 package com.college.icrs.integration;
 
-import com.college.icrs.model.Category;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.langchain4j.model.chat.ChatModel;
 import org.junit.jupiter.api.Test;
@@ -31,11 +30,11 @@ class GrievanceApiAiDisabledIT extends GrievanceApiIntegrationTestSupport {
     @Test
     void shouldCreateGrievanceWithAiFieldsUnsetWhenAiDisabled() throws Exception {
         String token = loginAndGetBearerToken();
-        Category category = createCategory(false, false, "AI-DISABLED");
+        long categoryId = getCatalogCategoryIdByName("Hostel & Accommodation");
 
         JsonNode grievance = submitGrievance(
                 token,
-                category.getId(),
+                categoryId,
                 "Hostel water issue",
                 "Water is unavailable in hostel from last night"
         );
@@ -50,20 +49,18 @@ class GrievanceApiAiDisabledIT extends GrievanceApiIntegrationTestSupport {
     void shouldAllowLoginCategoriesAndMyGrievancesFlow() throws Exception {
         String token = loginAndGetBearerToken();
 
-        MvcResult categoriesResult = mockMvc.perform(get("/categories"))
-                .andExpect(status().isOk())
-                .andReturn();
-        JsonNode categories = objectMapper.readTree(categoriesResult.getResponse().getContentAsString());
+        JsonNode categories = getCategories();
         assertTrue(categories.isArray());
+        assertTrue(categories.size() > 0);
 
-        Category category = createCategory(false, false, "FLOW-CHECK");
-        submitGrievance(token, category.getId(), "Library issue", "Need additional reading room timings.");
+        long categoryId = getCatalogCategoryIdByName("Academic");
+        submitGrievance(token, categoryId, "Library issue", "Need additional reading room timings.");
 
         JsonNode myGrievances = getMyGrievances(token);
         assertTrue(myGrievances.isArray());
         assertTrue(myGrievances.size() >= 1);
 
-        long count = grievanceRepository.findByStudentId(
+        long count = grievanceRepository.findByStudentIdOrderByCreatedAtDesc(
                 userRepository.findByEmail(LOGIN_EMAIL).orElseThrow().getId()
         ).size();
         assertTrue(count >= 1);

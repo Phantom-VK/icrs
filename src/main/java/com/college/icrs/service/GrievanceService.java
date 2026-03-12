@@ -14,6 +14,7 @@ import com.college.icrs.repository.CommentRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -31,6 +32,7 @@ public class GrievanceService {
     private final StatusHistoryRepository statusHistoryRepository;
     private final CommentRepository commentRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     public Grievance createGrievance(Grievance grievance, Long studentId) {
         User student = userRepository.findById(studentId)
@@ -93,7 +95,7 @@ public class GrievanceService {
     }
 
     public List<Grievance> getGrievancesByStudent(Long studentId) {
-        return grievanceRepository.findByStudentId(studentId);
+        return grievanceRepository.findByStudentIdOrderByCreatedAtDesc(studentId);
     }
 
     public Page<Grievance> getGrievancesByStatus(Status status, Pageable pageable) {
@@ -231,8 +233,7 @@ public class GrievanceService {
             String body
     ) {
         Grievance grievance = getGrievanceById(grievanceId);
-        User author = userRepository.findByEmail(systemAuthorEmail)
-                .orElseThrow(() -> new RuntimeException("System author not found"));
+        User author = ensureSystemAuthor(systemAuthorEmail);
 
         if (author.getRole() == com.college.icrs.model.Role.STUDENT) {
             throw new RuntimeException("System author must not be a student");
@@ -361,6 +362,20 @@ public class GrievanceService {
         history.setToStatus(toStatus);
         history.setReason(reason);
         statusHistoryRepository.save(history);
+    }
+
+    private User ensureSystemAuthor(String systemAuthorEmail) {
+        return userRepository.findByEmail(systemAuthorEmail).orElseGet(() -> {
+            User systemUser = new User();
+            systemUser.setUsername("AI System");
+            systemUser.setEmail(systemAuthorEmail);
+            systemUser.setPassword(passwordEncoder.encode("ai-system-disabled-login"));
+            systemUser.setRole(com.college.icrs.model.Role.ADMIN);
+            systemUser.setEnabled(true);
+            systemUser.setDepartment("SYSTEM");
+            systemUser.setStudentId("AI_SYSTEM");
+            return userRepository.save(systemUser);
+        });
     }
 
     private void trySendSubmissionEmail(User student, Grievance grievance) {
