@@ -32,7 +32,7 @@ public class IcrsProperties {
     @Setter
     @Getter
     public static class Ai {
-        private boolean enabled = false;
+        private boolean enabled = true;
         private double autoResolveConfidenceThreshold = 0.80d;
         private int maxDescriptionChars = 4000;
         private String systemUserEmail = "ai.system@icrs.local";
@@ -44,7 +44,7 @@ public class IcrsProperties {
     @Setter
     @Getter
     public static class Sentiment {
-        private boolean enabled = false;
+        private boolean enabled = true;
         private String baseUrl = "http://localhost:8090";
         private int timeoutMs = 3000;
         private double veryNegativeThreshold = 0.85d;
