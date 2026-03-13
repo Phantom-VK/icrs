@@ -139,7 +139,7 @@ class GrievanceApiAiWithSentimentIT extends GrievanceApiIntegrationTestSupport {
 
         assertFalse("RESOLVED".equals(updatedGrievance.path("status").asText()));
         assertFalse(updatedGrievance.path("aiResolved").asBoolean(true));
-        assertTrue(updatedGrievance.path("aiResolutionComment").asText("").contains("confidence="));
+        assertTrue(updatedGrievance.path("aiResolutionComment").asText("").length() > 0);
 
         List<com.college.icrs.model.StatusHistory> history =
                 statusHistoryRepository.findByGrievanceIdOrderByChangedAtDesc(grievanceId);

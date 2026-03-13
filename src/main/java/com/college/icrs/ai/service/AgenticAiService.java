@@ -101,7 +101,7 @@ public class AgenticAiService {
                 return updated;
             }
 
-            String manualReviewComment = buildManualReviewComment(resolution, finalConfidence);
+            String manualReviewComment = buildManualReviewComment(resolution);
             Grievance updated = grievanceService.updateAiRecommendation(
                     grievanceId,
                     normalizeNullable(resolution.getResolutionText()),
@@ -227,12 +227,11 @@ public class AgenticAiService {
         }
     }
 
-    private String buildManualReviewComment(ResolutionDecision resolution, Double confidence) {
-        String base = normalizeText(
+    private String buildManualReviewComment(ResolutionDecision resolution) {
+        return normalizeText(
                 resolution != null ? resolution.getInternalComment() : null,
                 "Routed for human review due to policy or confidence."
         );
-        return base + " | confidence=" + (confidence == null ? "N/A" : confidence);
     }
 
     private String decisionSource() {

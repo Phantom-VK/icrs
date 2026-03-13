@@ -308,24 +308,9 @@ const TrackGrievance: React.FC = () => {
                         <strong>AI Summary Title:</strong> {g.aiTitle}
                       </p>
                     )}
-                    {g.priority && (
-                      <p>
-                        <strong>Priority:</strong> {g.priority.replace("_", " ")}
-                      </p>
-                    )}
-                    {g.sentiment && (
-                      <p>
-                        <strong>Sentiment:</strong> {g.sentiment.replace("_", " ")}
-                      </p>
-                    )}
                     {g.aiDecisionAt && (
                       <p>
                         <strong>AI Decision Time:</strong> {new Date(g.aiDecisionAt).toLocaleString()}
-                      </p>
-                    )}
-                    {g.aiModelName && (
-                      <p>
-                        <strong>AI Models:</strong> {g.aiModelName}
                       </p>
                     )}
                     <p>
@@ -335,12 +320,6 @@ const TrackGrievance: React.FC = () => {
                       <div style={{ marginTop: "10px", padding: "10px", background: "#ecf7ff", borderRadius: "8px" }}>
                         <strong>AI Resolution:</strong>
                         <div style={{ marginTop: "4px" }}>{g.aiResolutionText}</div>
-                      </div>
-                    )}
-                    {g.aiResolutionComment && (
-                      <div style={{ marginTop: "10px", padding: "10px", background: "#fff8e1", borderRadius: "8px" }}>
-                        <strong>AI Review Note:</strong>
-                        <div style={{ marginTop: "4px" }}>{g.aiResolutionComment}</div>
                       </div>
                     )}
                     <div style={{ marginTop: "10px" }}>
