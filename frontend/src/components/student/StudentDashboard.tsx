@@ -247,16 +247,6 @@ const StudentDashboard: React.FC = () => {
                           <strong>AI Summary Title:</strong> {g.aiTitle}
                         </p>
                       )}
-                      {g.priority && (
-                        <p>
-                          <strong>Priority:</strong> {g.priority.replace("_", " ")}
-                        </p>
-                      )}
-                      {g.sentiment && (
-                        <p>
-                          <strong>Sentiment:</strong> {g.sentiment.replace("_", " ")}
-                        </p>
-                      )}
                       <p>
                         <strong>Description:</strong> {g.description}
                       </p>
