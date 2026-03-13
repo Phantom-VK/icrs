@@ -71,18 +71,25 @@ public class GrievanceService {
 
     public Grievance updateGrievance(Long id, Grievance grievanceDetails) {
         Grievance grievance = getGrievanceById(id);
+        Status fromStatus = grievance.getStatus();
+        Status targetStatus = fromStatus;
 
         grievance.setTitle(grievanceDetails.getTitle());
         grievance.setDescription(grievanceDetails.getDescription());
         grievance.setCategory(grievanceDetails.getCategory());
         grievance.setSubcategory(grievanceDetails.getSubcategory());
         if (grievanceDetails.getStatus() != null) {
-            Status targetStatus = grievanceDetails.getStatus();
+            targetStatus = grievanceDetails.getStatus();
             reconcileAiFlagsForManualStatusChange(grievance, targetStatus);
             grievance.setStatus(targetStatus);
         }
 
-        return grievanceRepository.save(grievance);
+        Grievance saved = grievanceRepository.save(grievance);
+        appendStatusHistory(saved, fromStatus, targetStatus, null);
+        if (fromStatus != targetStatus) {
+            trySendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, targetStatus);
+        }
+        return saved;
     }
 
     public void deleteGrievance(Long id) {
@@ -155,6 +162,7 @@ public class GrievanceService {
         grievance.setStatus(Status.RESOLVED);
         Grievance saved = grievanceRepository.save(grievance);
         appendStatusHistory(saved, fromStatus, Status.RESOLVED, "Resolved manually");
+        trySendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, Status.RESOLVED);
         return saved;
     }
 

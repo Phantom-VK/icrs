@@ -35,6 +35,8 @@ public class IcrsProperties {
         private boolean enabled = true;
         private double autoResolveConfidenceThreshold = 0.80d;
         private int maxDescriptionChars = 4000;
+        private int timeoutSeconds = 90;
+        private int maxCompletionTokens = 400;
         private String systemUserEmail = "ai.system@icrs.local";
         private String decisionSource = "DEEPSEEK_AGENTIC_V1";
         private boolean addSystemCommentOnManualReview = true;
