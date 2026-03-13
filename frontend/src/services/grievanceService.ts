@@ -1,6 +1,8 @@
 import api from "./apiClient";
 import { getErrorMessage } from "../utils/error";
 import type { Category } from "../types/category";
+import type { Grievance } from "../types/grievance";
+import { sortGrievancesByLatest } from "../utils/grievanceFilters";
 
 export interface GrievanceData {
   title: string;
@@ -40,7 +42,7 @@ const grievanceService = {
       console.log("Fetching grievances of logged-in student...");
       const response = await api.get("/grievances/student/me");
       console.log("Grievances fetched:", response.data);
-      return response.data;
+      return sortGrievancesByLatest(response.data as Grievance[]);
     } catch (error: any) {
       const message = getErrorMessage(error, "Unable to fetch your grievances.");
       console.error("Failed to fetch student's grievances:", message);
@@ -52,7 +54,7 @@ const grievanceService = {
     try {
       console.log(`Fetching grievance with ID: ${id}`);
       const response = await api.get(`/grievances/${id}`);
-      return response.data;
+      return response.data as Grievance;
     } catch (error: any) {
       const message = getErrorMessage(error, "Grievance not found.");
       console.error("Failed to fetch grievance:", message);
@@ -67,7 +69,7 @@ const grievanceService = {
         params: { page, size, sortBy, direction },
       });
       console.log("All grievances fetched:", response.data);
-      return response.data;
+      return response.data as { content?: Grievance[] } | Grievance[];
     } catch (error: any) {
       const message = getErrorMessage(error, "Unable to fetch grievances.");
       console.error("Failed to fetch grievances:", message);

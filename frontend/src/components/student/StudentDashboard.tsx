@@ -6,15 +6,7 @@ import logo from "../../assets/logo.png";
 import authService from "../../services/authService";
 import grievanceService from "../../services/grievanceService";
 import { getActiveSortedGrievances } from "../../utils/grievanceFilters";
-
-interface Grievance {
-  id: number;
-  title: string;
-  description: string;
-  category: string;
-  status: "SUBMITTED" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
-  createdAt?: string;
-}
+import type { Grievance } from "../../types/grievance";
 
 const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -220,6 +212,7 @@ const StudentDashboard: React.FC = () => {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>
                     <strong>{g.title}</strong> - Status: {g.status}
+                    {g.aiResolved ? " | Resolved by AI" : ""}
                   </span>
                   <button
                     onClick={(e) => {
@@ -249,6 +242,21 @@ const StudentDashboard: React.FC = () => {
                       <p>
                         <strong>Category:</strong> {g.category}
                       </p>
+                      {g.aiTitle && g.aiTitle !== g.title && (
+                        <p>
+                          <strong>AI Summary Title:</strong> {g.aiTitle}
+                        </p>
+                      )}
+                      {g.priority && (
+                        <p>
+                          <strong>Priority:</strong> {g.priority.replace("_", " ")}
+                        </p>
+                      )}
+                      {g.sentiment && (
+                        <p>
+                          <strong>Sentiment:</strong> {g.sentiment.replace("_", " ")}
+                        </p>
+                      )}
                       <p>
                         <strong>Description:</strong> {g.description}
                       </p>

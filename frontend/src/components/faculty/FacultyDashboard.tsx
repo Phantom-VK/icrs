@@ -17,21 +17,8 @@ import grievanceService from "../../services/grievanceService";
 import type { Comment } from "../../services/grievanceService";
 import authService from "../../services/authService";
 import { useSnackbar } from "notistack";
-import type { StatusHistory } from "../../types/statusHistory";
 import { getActiveSortedGrievances, getHistorySortedGrievances } from "../../utils/grievanceFilters";
-
-interface Grievance {
-  id: number;
-  title: string;
-  description: string;
-  category: string;
-  subcategory: string;
-  registrationNumber: string;
-  status: "SUBMITTED" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
-  statusHistory?: StatusHistory[];
-  updatedAt?: string;
-  createdAt?: string;
-}
+import type { Grievance } from "../../types/grievance";
 
 const FacultyDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -56,8 +43,8 @@ const FacultyDashboard: React.FC = () => {
         console.log("Logged-in faculty:", user);
 
         const res = await grievanceService.getAll();
-        // if paginated, data.content else full array
-        setGrievances(res.content || res);
+        const grievanceItems = Array.isArray(res) ? res : res.content || [];
+        setGrievances(grievanceItems);
       } catch (err) {
         console.error("Error loading grievances:", err);
         setError("Failed to load grievances. Please try again.");
@@ -122,6 +109,7 @@ const FacultyDashboard: React.FC = () => {
   const filteredGrievances = grievances.filter(
     (g) =>
       g.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (g.aiTitle || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       g.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (g.registrationNumber || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -253,9 +241,26 @@ const FacultyDashboard: React.FC = () => {
             >
               <CardContent>
                 <Typography variant="h6">{g.title}</Typography>
-                <Typography variant="body2" sx={{ color: statusColors[g.status] }}>
-                  Status: {g.status.replace("_", " ")}
-                </Typography>
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+                  <Typography variant="body2" sx={{ color: statusColors[g.status] }}>
+                    Status: {g.status.replace("_", " ")}
+                  </Typography>
+                  {g.aiResolved && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 10,
+                        bgcolor: "#e8f5e9",
+                        color: "#1b5e20",
+                        fontWeight: 700,
+                      }}
+                    >
+                      RESOLVED BY AI
+                    </Typography>
+                  )}
+                </Box>
 
                 <Collapse in={expandedId === g.id}>
                   <Box mt={2}>
@@ -265,12 +270,55 @@ const FacultyDashboard: React.FC = () => {
                     <Typography>
                       <strong>Category:</strong> {g.category}
                     </Typography>
-                    <Typography>
-                      <strong>Subcategory:</strong> {g.subcategory}
-                    </Typography>
+                    {g.subcategory && (
+                      <Typography>
+                        <strong>Subcategory:</strong> {g.subcategory}
+                      </Typography>
+                    )}
+                    {g.aiTitle && g.aiTitle !== g.title && (
+                      <Typography>
+                        <strong>AI Summary Title:</strong> {g.aiTitle}
+                      </Typography>
+                    )}
+                    {g.priority && (
+                      <Typography>
+                        <strong>Priority:</strong> {g.priority.replace("_", " ")}
+                      </Typography>
+                    )}
+                    {g.sentiment && (
+                      <Typography>
+                        <strong>Sentiment:</strong> {g.sentiment.replace("_", " ")}
+                      </Typography>
+                    )}
+                    {g.aiDecisionAt && (
+                      <Typography>
+                        <strong>AI Decision Time:</strong> {new Date(g.aiDecisionAt).toLocaleString()}
+                      </Typography>
+                    )}
+                    {g.aiModelName && (
+                      <Typography>
+                        <strong>AI Models:</strong> {g.aiModelName}
+                      </Typography>
+                    )}
                     <Typography>
                       <strong>Description:</strong> {g.description}
                     </Typography>
+                    {g.aiResolutionText && (
+                      <Box sx={{ mt: 2, p: 1.5, bgcolor: "#ecf7ff", borderRadius: 1 }}>
+                        <Typography variant="subtitle1">AI Resolution Text</Typography>
+                        <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                          {g.aiResolutionText}
+                        </Typography>
+                      </Box>
+                    )}
+                    {g.aiResolutionComment && (
+                      <Box sx={{ mt: 2, p: 1.5, bgcolor: "#fff8e1", borderRadius: 1 }}>
+                        <Typography variant="subtitle1">AI Internal Note</Typography>
+                        <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                          {g.aiResolutionComment}
+                        </Typography>
+                      </Box>
+                    )}
 
                     <Box sx={{ mt: 2 }}>
                       <Typography variant="subtitle1">Status History</Typography>
@@ -347,7 +395,9 @@ const FacultyDashboard: React.FC = () => {
                         comments[g.id].map((c) => (
                           <Box key={c.id} sx={{ mt: 1, p: 1.5, bgcolor: "white", borderRadius: 1 }}>
                             <Typography variant="body2" fontWeight="bold">
-                              {c.authorName || "User"} ({c.authorEmail || ""})
+                              {c.authorEmail === "ai.system@icrs.local"
+                                ? "AI System"
+                                : `${c.authorName || "User"} (${c.authorEmail || ""})`}
                             </Typography>
                             <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
                               {c.body}
