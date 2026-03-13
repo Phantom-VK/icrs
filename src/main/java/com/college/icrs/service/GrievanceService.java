@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -189,6 +190,7 @@ public class GrievanceService {
             LocalDateTime aiDecisionAt
     ) {
         Grievance grievance = getGrievanceById(grievanceId);
+        Status currentStatus = grievance.getStatus();
         grievance.setAiResolved(false);
         grievance.setAiResolutionText(aiResolutionText);
         grievance.setAiResolutionComment(aiResolutionComment);
@@ -198,7 +200,9 @@ public class GrievanceService {
         grievance.setAiModelName(aiModelName);
         grievance.setAiDecisionSource(aiDecisionSource);
         grievance.setAiDecisionAt(aiDecisionAt != null ? aiDecisionAt : LocalDateTime.now());
-        return grievanceRepository.save(grievance);
+        Grievance saved = grievanceRepository.save(grievance);
+        appendStatusHistory(saved, currentStatus, currentStatus, "Redirected to the corresponding faculty by AI");
+        return saved;
     }
 
     public Grievance markResolvedByAi(
@@ -245,6 +249,9 @@ public class GrievanceService {
         comment.setBody(body);
 
         Comment saved = commentRepository.save(comment);
+        if (grievance.getStudent() != null) {
+            trySendCommentEmailToStudent(grievance.getStudent(), grievance, author, body);
+        }
         com.college.icrs.dto.CommentResponseDTO dto = new com.college.icrs.dto.CommentResponseDTO();
         dto.setId(saved.getId());
         dto.setBody(saved.getBody());
@@ -353,7 +360,7 @@ public class GrievanceService {
     }
 
     private void appendStatusHistory(Grievance grievance, Status fromStatus, Status toStatus, String reason) {
-        if (fromStatus == toStatus) {
+        if (fromStatus == toStatus && !StringUtils.hasText(reason)) {
             return;
         }
         StatusHistory history = new StatusHistory();
