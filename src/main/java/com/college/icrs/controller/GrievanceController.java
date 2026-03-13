@@ -6,6 +6,7 @@ import com.college.icrs.dto.GrievanceResponseDTO;
 import com.college.icrs.dto.CommentRequestDTO;
 import com.college.icrs.dto.CommentResponseDTO;
 import com.college.icrs.exception.ResourceNotFoundException;
+import com.college.icrs.logging.IcrsLog;
 import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Status;
 import com.college.icrs.model.User;
@@ -22,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/grievances")
 @Validated
 @lombok.RequiredArgsConstructor
+@Slf4j
 public class GrievanceController {
 
     private final GrievanceService grievanceService;
@@ -51,6 +54,10 @@ public class GrievanceController {
         }
 
         String email = authentication.getName();
+        log.info(IcrsLog.event("grievance.submit.request",
+                "studentEmail", email,
+                "categoryId", grievanceDTO.getCategoryId(),
+                "subcategoryId", grievanceDTO.getSubcategoryId()));
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found for email: " + email));
 
@@ -58,6 +65,10 @@ public class GrievanceController {
         applyCategorySelections(grievanceDTO, grievance);
         Grievance createdGrievance = grievanceService.createGrievance(grievance, user.getId());
         agenticAiService.processNewGrievanceAsync(createdGrievance.getId());
+        log.info(IcrsLog.event("grievance.submit.persisted",
+                "grievanceId", createdGrievance.getId(),
+                "status", createdGrievance.getStatus(),
+                "assignedTo", createdGrievance.getAssignedTo() != null ? createdGrievance.getAssignedTo().getEmail() : null));
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(grievanceMapper.toDTO(createdGrievance));
@@ -170,6 +181,7 @@ public class GrievanceController {
     public ResponseEntity<GrievanceResponseDTO> updateStatus(
             @PathVariable Long id,
             @RequestParam Status status) {
+        log.info(IcrsLog.event("grievance.status.update.request", "grievanceId", id, "status", status));
 
         Grievance updated = grievanceService.updateGrievanceStatus(id, status);
         return ResponseEntity.ok(grievanceMapper.toDTO(updated));
@@ -191,6 +203,7 @@ public class GrievanceController {
             Authentication authentication) {
 
         String email = authentication.getName();
+        log.info(IcrsLog.event("grievance.comment.create.request", "grievanceId", id, "authorEmail", email));
         CommentResponseDTO dto = grievanceService.addComment(id, email, requestDTO.getBody());
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
@@ -214,6 +227,9 @@ public class GrievanceController {
                     grievanceDTO.getCategory()
             );
             grievance.setCategory(category);
+            log.debug(IcrsLog.event("grievance.category.resolved",
+                    "categoryId", category.getId(),
+                    "categoryName", category.getName()));
         }
 
         if ((grievanceDTO.getSubcategoryId() != null || grievanceDTO.getSubcategory() != null) && grievance.getCategory() != null) {
@@ -223,6 +239,9 @@ public class GrievanceController {
                     grievanceDTO.getSubcategory()
             );
             grievance.setSubcategory(subcategory);
+            log.debug(IcrsLog.event("grievance.subcategory.resolved",
+                    "subcategoryId", subcategory.getId(),
+                    "subcategoryName", subcategory.getName()));
         }
     }
 }

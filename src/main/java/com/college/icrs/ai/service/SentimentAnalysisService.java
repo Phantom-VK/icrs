@@ -1,6 +1,7 @@
 package com.college.icrs.ai.service;
 
 import com.college.icrs.config.IcrsProperties;
+import com.college.icrs.logging.IcrsLog;
 import com.college.icrs.model.Sentiment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
@@ -28,10 +29,14 @@ public class SentimentAnalysisService {
     public SentimentDecision analyze(String text) {
         IcrsProperties.Sentiment cfg = icrsProperties.getAi().getSentiment();
         if (!cfg.isEnabled() || !StringUtils.hasText(text)) {
+            log.info(IcrsLog.event("sentiment.analysis.skipped",
+                    "enabled", cfg.isEnabled(),
+                    "hasText", StringUtils.hasText(text)));
             return SentimentDecision.unavailable();
         }
 
         try {
+            log.info(IcrsLog.event("sentiment.analysis.start", "baseUrl", cfg.getBaseUrl(), "model", cfg.getModelName()));
             String baseUrl = cfg.getBaseUrl().replaceAll("/+$", "");
             String payload = objectMapper.writeValueAsString(new SentimentRequest(text));
 
@@ -44,7 +49,9 @@ public class SentimentAnalysisService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                log.warn("Sentiment service returned non-2xx status {} body={}", response.statusCode(), response.body());
+                log.warn(IcrsLog.event("sentiment.analysis.failed",
+                        "statusCode", response.statusCode(),
+                        "reason", "non-2xx"));
                 return SentimentDecision.unavailable();
             }
 
@@ -55,10 +62,14 @@ public class SentimentAnalysisService {
 
             Double score = clamp(api.getScore());
             Sentiment sentiment = mapSentiment(api.getLabel(), score);
+            log.info(IcrsLog.event("sentiment.analysis.completed",
+                    "sentiment", sentiment,
+                    "score", score,
+                    "model", StringUtils.hasText(api.getModel()) ? api.getModel() : cfg.getModelName()));
             return new SentimentDecision(sentiment, score, StringUtils.hasText(api.getModel()) ? api.getModel() : cfg.getModelName());
 
         } catch (Exception e) {
-            log.warn("Sentiment analysis service failed: {}", e.getMessage());
+            log.warn(IcrsLog.event("sentiment.analysis.failed", "reason", e.getClass().getSimpleName()), e);
             return SentimentDecision.unavailable();
         }
     }

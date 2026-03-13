@@ -1,6 +1,7 @@
 package com.college.icrs.config;
 
 import com.college.icrs.exception.ApiException;
+import com.college.icrs.logging.IcrsLog;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidationErrors(MethodArgumentNotValidException ex, WebRequest request) {
+        log.warn(IcrsLog.event("api.validation.failed", "path", request.getDescription(false)));
         Map<String, String> errors = new HashMap<>();
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             errors.put(error.getField(), error.getDefaultMessage());
@@ -35,6 +37,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiError> handleConstraintViolation(ConstraintViolationException ex, WebRequest request) {
+        log.warn(IcrsLog.event("api.constraint-violation", "path", request.getDescription(false)));
         Map<String, String> errors = new HashMap<>();
         ex.getConstraintViolations().forEach(violation ->
                 errors.put(violation.getPropertyPath().toString(), violation.getMessage()));
@@ -44,18 +47,24 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiError> handleApiException(ApiException ex, WebRequest request) {
+        log.warn(IcrsLog.event("api.exception.handled",
+                "path", request.getDescription(false),
+                "status", ex.getStatus(),
+                "exception", ex.getClass().getSimpleName()));
         ApiError apiError = ApiError.of(ex.getStatus(), ex.getMessage(), request, null);
         return ResponseEntity.status(ex.getStatus()).body(apiError);
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiError> handleAuthentication(AuthenticationException ex, WebRequest request) {
+        log.warn(IcrsLog.event("api.authentication.failed", "path", request.getDescription(false)));
         ApiError apiError = ApiError.of(HttpStatus.UNAUTHORIZED, "Invalid email or password.", request, null);
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiError);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
+        log.warn(IcrsLog.event("api.access-denied", "path", request.getDescription(false)));
         ApiError apiError = ApiError.of(HttpStatus.FORBIDDEN, "You are not allowed to perform this action.", request, null);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(apiError);
     }
