@@ -76,11 +76,17 @@ class GrievanceApiAiWithSentimentIT extends GrievanceApiIntegrationTestSupport {
                 "Washroom cleaning has been delayed multiple times this week."
         );
 
-        assertTrue("NEGATIVE".equals(grievance.path("sentiment").asText())
-                || "VERY_NEGATIVE".equals(grievance.path("sentiment").asText()));
-        assertTrue(grievance.path("aiModelName").asText("").contains("sentiment:mock-sentiment-model"));
-        assertFalse(grievance.path("aiResolved").asBoolean(true));
-        assertTrue(grievance.path("aiDecisionAt").asText("").length() > 0);
+        JsonNode updatedGrievance = waitForMyGrievance(
+                token,
+                grievance.path("id").asLong(),
+                g -> g.path("aiDecisionAt").asText("").length() > 0
+        );
+
+        assertTrue("NEGATIVE".equals(updatedGrievance.path("sentiment").asText())
+                || "VERY_NEGATIVE".equals(updatedGrievance.path("sentiment").asText()));
+        assertTrue(updatedGrievance.path("aiModelName").asText("").contains("sentiment:mock-sentiment-model"));
+        assertFalse(updatedGrievance.path("aiResolved").asBoolean(true));
+        assertTrue(updatedGrievance.path("aiDecisionAt").asText("").length() > 0);
     }
 
     @Test
@@ -125,9 +131,15 @@ class GrievanceApiAiWithSentimentIT extends GrievanceApiIntegrationTestSupport {
         );
 
         long grievanceId = grievance.path("id").asLong();
-        assertFalse("RESOLVED".equals(grievance.path("status").asText()));
-        assertFalse(grievance.path("aiResolved").asBoolean(true));
-        assertTrue(grievance.path("aiResolutionComment").asText("").contains("confidence="));
+        JsonNode updatedGrievance = waitForMyGrievance(
+                token,
+                grievanceId,
+                g -> g.path("aiDecisionAt").asText("").length() > 0
+        );
+
+        assertFalse("RESOLVED".equals(updatedGrievance.path("status").asText()));
+        assertFalse(updatedGrievance.path("aiResolved").asBoolean(true));
+        assertTrue(updatedGrievance.path("aiResolutionComment").asText("").contains("confidence="));
 
         List<com.college.icrs.model.StatusHistory> history =
                 statusHistoryRepository.findByGrievanceIdOrderByChangedAtDesc(grievanceId);

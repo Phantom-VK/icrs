@@ -58,17 +58,11 @@ public class GrievanceController {
         Grievance grievance = grievanceMapper.toEntity(grievanceDTO);
         applyCategorySelections(grievanceDTO, grievance);
         Grievance createdGrievance = grievanceService.createGrievance(grievance, user.getId());
-        Grievance finalGrievance = createdGrievance;
-        try {
-            finalGrievance = agenticAiService.processNewGrievance(createdGrievance.getId());
-        } catch (Exception e) {
-            // Preserve core grievance creation even if AI processing fails.
-            System.err.println("AI pipeline failed for grievance " + createdGrievance.getId() + ": " + e.getMessage());
-        }
+        agenticAiService.processNewGrievanceAsync(createdGrievance.getId());
 
-        System.out.println("Grievance created with ID: " + finalGrievance.getId());
+        System.out.println("Grievance created with ID: " + createdGrievance.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(grievanceMapper.toDTO(finalGrievance));
+                .body(grievanceMapper.toDTO(createdGrievance));
     }
 
     /** Get all grievances (Faculty/Admin) */

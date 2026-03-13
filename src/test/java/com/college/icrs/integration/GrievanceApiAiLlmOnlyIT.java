@@ -90,9 +90,15 @@ class GrievanceApiAiLlmOnlyIT extends GrievanceApiIntegrationTestSupport {
         );
 
         long grievanceId = grievance.path("id").asLong();
-        assertEquals("RESOLVED", grievance.path("status").asText());
-        assertTrue(grievance.path("aiResolved").asBoolean(false));
-        assertTrue(grievance.path("aiResolutionText").asText("").contains("WiFi"));
+        JsonNode updatedGrievance = waitForMyGrievance(
+                token,
+                grievanceId,
+                g -> "RESOLVED".equals(g.path("status").asText()) && g.path("aiResolved").asBoolean(false)
+        );
+
+        assertEquals("RESOLVED", updatedGrievance.path("status").asText());
+        assertTrue(updatedGrievance.path("aiResolved").asBoolean(false));
+        assertTrue(updatedGrievance.path("aiResolutionText").asText("").contains("WiFi"));
 
         JsonNode comments = getComments(token, grievanceId);
         boolean hasAiComment = false;

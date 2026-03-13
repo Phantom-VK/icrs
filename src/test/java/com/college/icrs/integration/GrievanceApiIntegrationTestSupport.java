@@ -12,6 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.function.Predicate;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -111,6 +113,30 @@ public abstract class GrievanceApiIntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString());
+    }
+
+    protected JsonNode waitForMyGrievance(String token, long grievanceId, Predicate<JsonNode> condition) throws Exception {
+        long deadline = System.currentTimeMillis() + 15000;
+        JsonNode lastSeen = null;
+
+        while (System.currentTimeMillis() < deadline) {
+            JsonNode grievances = getMyGrievances(token);
+            for (JsonNode grievance : grievances) {
+                if (grievance.path("id").asLong() == grievanceId) {
+                    lastSeen = grievance;
+                    if (condition.test(grievance)) {
+                        return grievance;
+                    }
+                }
+            }
+            Thread.sleep(200);
+        }
+
+        if (lastSeen != null) {
+            return lastSeen;
+        }
+
+        throw new IllegalStateException("Timed out waiting for grievance " + grievanceId);
     }
 
     private void ensureStudentAccountForLogin() {

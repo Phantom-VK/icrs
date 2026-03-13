@@ -13,7 +13,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -32,6 +34,12 @@ public class AgenticAiService {
 
     @Value("${ai.modelname:deepseek-chat}")
     private String modelName;
+
+    @Async("aiTaskExecutor")
+    @Transactional
+    public void processNewGrievanceAsync(Long grievanceId) {
+        processNewGrievance(grievanceId);
+    }
 
     public Grievance processNewGrievance(Long grievanceId) {
         Grievance grievance = grievanceService.getGrievanceById(grievanceId);
