@@ -148,11 +148,11 @@ public class CategoryCatalogService {
     }
 
     private boolean matches(Long left, Long right) {
-        return left != null && right != null && left.equals(right);
+        return left != null && left.equals(right);
     }
 
     private boolean matches(String left, String right) {
-        return left != null && right != null && left.equalsIgnoreCase(right);
+        return left != null && left.equalsIgnoreCase(right);
     }
 
     private record CatalogCategory(

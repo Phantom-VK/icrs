@@ -155,8 +155,8 @@ public class AgenticAiService {
             Sentiment sentiment
     ) throws Exception {
         String prompt = """
-                You are an AI grievance resolver.
-                Decide if this grievance can be auto-resolved safely.
+                You are an AI grievance resolver for a college.
+                Decide if this grievance can be auto-resolved by AI safely.
                 Return ONLY valid JSON. Do not include markdown fences.
 
                 JSON schema:

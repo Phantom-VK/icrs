@@ -14,7 +14,7 @@ import java.util.List;
 @Repository
 public interface GrievanceRepository extends JpaRepository<Grievance, Long> {
 
-    List<Grievance> findByStudentId(Long studentId);
+    List<Grievance> findByStudentIdOrderByCreatedAtDesc(Long studentId);
 
     Page<Grievance> findByStatus(Status status, Pageable pageable);
 

@@ -45,10 +45,13 @@ public class IcrsProperties {
     @Getter
     public static class Sentiment {
         private boolean enabled = true;
+        private boolean autoStart = true;
         private String baseUrl = "http://localhost:8090";
         private int timeoutMs = 3000;
         private double veryNegativeThreshold = 0.85d;
         private double neutralBandUpper = 0.60d;
         private String modelName = "siebert/sentiment-roberta-large-english";
+        private String workingDir = "ml/sentiment_service";
+        private int startupWaitMs = 15000;
     }
 }
