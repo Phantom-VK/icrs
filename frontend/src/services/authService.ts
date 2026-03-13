@@ -1,6 +1,8 @@
 import api from "./apiClient";
 import { getErrorMessage } from "../utils/error";
 
+let currentUserRequest: Promise<any> | null = null;
+
 const authService = {
   register: async (
     username: string,
@@ -75,14 +77,24 @@ const authService = {
   },
 
   getCurrentUser: async () => {
-    try {
-      const response = await api.get("/users/me");
-      return response.data;
-    } catch (error: any) {
-      const message = getErrorMessage(error, "Failed to fetch user profile");
-      console.error("Failed to fetch current user:", message);
-      throw new Error(message);
+    if (currentUserRequest) {
+      return currentUserRequest;
     }
+
+    currentUserRequest = (async () => {
+      try {
+        const response = await api.get("/users/me");
+        return response.data;
+      } catch (error: any) {
+        const message = getErrorMessage(error, "Failed to fetch user profile");
+        console.error("Failed to fetch current user:", message);
+        throw new Error(message);
+      } finally {
+        currentUserRequest = null;
+      }
+    })();
+
+    return currentUserRequest;
   },
 
   logout: () => {
