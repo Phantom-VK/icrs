@@ -44,27 +44,16 @@ class GrievanceApiAiWithSentimentIT extends GrievanceApiIntegrationTestSupport {
                         "mock-sentiment-model"
                 ));
 
-        Mockito.when(chatModel.chat(Mockito.anyString())).thenAnswer(invocation -> {
-            String prompt = invocation.getArgument(0, String.class);
-            if (prompt.contains("grievance triage classifier")) {
-                return """
-                        {
-                          "priority":"MEDIUM",
-                          "aiTitle":"Hostel washroom maintenance request",
-                          "summary":"Repeated cleaning issues reported",
-                          "confidence":0.90
-                        }
-                        """;
-            }
-            return """
-                    {
-                      "autoResolve":false,
-                      "resolutionText":"",
-                      "internalComment":"Requires hostel office review.",
-                      "confidence":0.70
-                    }
-                    """;
-        });
+        Mockito.when(chatModel.chat(Mockito.anyString())).thenReturn("""
+                {
+                  "priority":"MEDIUM",
+                  "aiTitle":"Hostel washroom maintenance request",
+                  "autoResolve":false,
+                  "resolutionText":"",
+                  "internalComment":"Requires hostel office review.",
+                  "confidence":0.70
+                }
+                """);
 
         String token = loginAndGetBearerToken();
         long categoryId = getCatalogCategoryIdByName("Hostel & Accommodation");
@@ -98,27 +87,16 @@ class GrievanceApiAiWithSentimentIT extends GrievanceApiIntegrationTestSupport {
                         "mock-sentiment-model"
                 ));
 
-        Mockito.when(chatModel.chat(Mockito.anyString())).thenAnswer(invocation -> {
-            String prompt = invocation.getArgument(0, String.class);
-            if (prompt.contains("grievance triage classifier")) {
-                return """
-                        {
-                          "priority":"HIGH",
-                          "aiTitle":"Sensitive grievance summary",
-                          "summary":"Sensitive case requires strict handling",
-                          "confidence":0.96
-                        }
-                        """;
-            }
-            return """
-                    {
-                      "autoResolve":true,
-                      "resolutionText":"Auto response from AI",
-                      "internalComment":"LLM suggested auto resolution",
-                      "confidence":0.97
-                    }
-                    """;
-        });
+        Mockito.when(chatModel.chat(Mockito.anyString())).thenReturn("""
+                {
+                  "priority":"HIGH",
+                  "aiTitle":"Sensitive grievance summary",
+                  "autoResolve":true,
+                  "resolutionText":"Auto response from AI",
+                  "internalComment":"LLM suggested auto resolution",
+                  "confidence":0.97
+                }
+                """);
 
         String token = loginAndGetBearerToken();
         long categoryId = getCatalogCategoryIdByName("Harassment / PoSH");

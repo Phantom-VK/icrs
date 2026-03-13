@@ -52,32 +52,16 @@ class GrievanceApiAiLlmOnlyIT extends GrievanceApiIntegrationTestSupport {
 
     @Test
     void shouldAutoResolveAndCreateAiSystemCommentForNonSensitiveGrievance() throws Exception {
-        Mockito.when(chatModel.chat(Mockito.anyString())).thenAnswer(invocation -> {
-            String prompt = invocation.getArgument(0, String.class);
-            if (prompt.contains("grievance triage classifier")) {
-                return """
-                        {
-                          "priority":"LOW",
-                          "aiTitle":"WiFi connectivity issue",
-                          "summary":"Network disconnects intermittently in hostel block",
-                          "confidence":0.95
-                        }
-                        """;
-            }
-            if (prompt.contains("AI grievance resolver")) {
-                return """
-                        {
-                          "autoResolve":true,
-                          "resolutionText":"Please reset your WiFi profile and reconnect. IT support has been notified.",
-                          "internalComment":"Standard connectivity issue with a known fix pattern.",
-                          "confidence":0.96
-                        }
-                        """;
-            }
-            return """
-                    {"autoResolve":false,"resolutionText":"","internalComment":"Fallback","confidence":0.4}
-                    """;
-        });
+        Mockito.when(chatModel.chat(Mockito.anyString())).thenReturn("""
+                {
+                  "priority":"LOW",
+                  "aiTitle":"WiFi connectivity issue",
+                  "autoResolve":true,
+                  "resolutionText":"Please reset your WiFi profile and reconnect. IT support has been notified.",
+                  "internalComment":"Standard connectivity issue with a known fix pattern.",
+                  "confidence":0.96
+                }
+                """);
 
         String token = loginAndGetBearerToken();
         long categoryId = getCatalogCategoryIdByName("IT Support");

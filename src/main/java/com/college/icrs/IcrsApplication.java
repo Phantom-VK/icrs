@@ -25,6 +25,8 @@ public class IcrsApplication {
 		executor.setCorePoolSize(2);
 		executor.setMaxPoolSize(4);
 		executor.setQueueCapacity(50);
+		executor.setWaitForTasksToCompleteOnShutdown(true);
+		executor.setAwaitTerminationSeconds(15);
 		executor.initialize();
 		return executor;
 	}

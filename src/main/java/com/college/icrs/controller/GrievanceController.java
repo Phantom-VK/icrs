@@ -5,6 +5,7 @@ import com.college.icrs.dto.GrievanceRequestDTO;
 import com.college.icrs.dto.GrievanceResponseDTO;
 import com.college.icrs.dto.CommentRequestDTO;
 import com.college.icrs.dto.CommentResponseDTO;
+import com.college.icrs.exception.ResourceNotFoundException;
 import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Status;
 import com.college.icrs.model.User;
@@ -50,17 +51,14 @@ public class GrievanceController {
         }
 
         String email = authentication.getName();
-        System.out.println("Grievance submitted by: " + email);
-
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found for email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for email: " + email));
 
         Grievance grievance = grievanceMapper.toEntity(grievanceDTO);
         applyCategorySelections(grievanceDTO, grievance);
         Grievance createdGrievance = grievanceService.createGrievance(grievance, user.getId());
         agenticAiService.processNewGrievanceAsync(createdGrievance.getId());
 
-        System.out.println("Grievance created with ID: " + createdGrievance.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(grievanceMapper.toDTO(createdGrievance));
     }
@@ -131,17 +129,14 @@ public class GrievanceController {
         }
 
         String email = authentication.getName();
-        System.out.println("Fetching grievances for student: " + email);
-
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found for email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for email: " + email));
 
         List<Grievance> grievances = grievanceService.getGrievancesByStudent(user.getId());
         List<GrievanceResponseDTO> dtoList = grievances.stream()
                 .map(grievanceMapper::toDTO)
                 .collect(Collectors.toList());
 
-        System.out.println("Found " + grievances.size() + " grievances for " + email);
         return ResponseEntity.ok(dtoList);
     }
 

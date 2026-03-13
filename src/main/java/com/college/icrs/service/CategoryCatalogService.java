@@ -1,6 +1,8 @@
 package com.college.icrs.service;
 
 import com.college.icrs.dto.CategoryResponseDTO;
+import com.college.icrs.exception.InvalidRequestException;
+import com.college.icrs.exception.ResourceNotFoundException;
 import com.college.icrs.model.Category;
 import com.college.icrs.model.Subcategory;
 import com.college.icrs.model.User;
@@ -74,7 +76,7 @@ public class CategoryCatalogService {
 
     public Category resolveCategory(Long categoryId, String categoryName) {
         CatalogCategory catalogCategory = findCategory(categoryId, categoryName)
-                .orElseThrow(() -> new java.util.NoSuchElementException("Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found."));
 
         Category category = categoryRepository.findByNameIgnoreCase(catalogCategory.name()).orElseGet(Category::new);
         category.setName(catalogCategory.name());
@@ -87,14 +89,14 @@ public class CategoryCatalogService {
 
     public Subcategory resolveSubcategory(Category category, Long subcategoryId, String subcategoryName) {
         if (category == null) {
-            throw new IllegalArgumentException("Category is required to resolve subcategory");
+            throw new InvalidRequestException("Category is required to resolve subcategory.");
         }
 
         CatalogCategory catalogCategory = findCategory(null, category.getName())
-                .orElseThrow(() -> new java.util.NoSuchElementException("Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found."));
 
         CatalogSubcategory catalogSubcategory = findSubcategory(catalogCategory, subcategoryId, subcategoryName)
-                .orElseThrow(() -> new java.util.NoSuchElementException("Subcategory not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Subcategory not found."));
 
         Subcategory subcategory = subcategoryRepository
                 .findByNameIgnoreCaseAndCategoryId(catalogSubcategory.name(), category.getId())
@@ -120,7 +122,7 @@ public class CategoryCatalogService {
 
     private User findUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new java.util.NoSuchElementException("Default assignee not found for email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("Default assignee not found for email: " + email));
     }
 
     private CategoryResponseDTO toDto(CatalogCategory category) {

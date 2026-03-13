@@ -3,6 +3,7 @@ package com.college.icrs.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
@@ -11,6 +12,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class EmailService {
 
     @Autowired
@@ -39,7 +41,7 @@ public class EmailService {
             try {
                 sendHtml(to, subject, bodyHtml);
             } catch (MessagingException e) {
-                throw new RuntimeException("Failed to send email to " + to + ": " + e.getMessage(), e);
+                log.warn("Failed to send async email to {}", to, e);
             }
         });
     }
