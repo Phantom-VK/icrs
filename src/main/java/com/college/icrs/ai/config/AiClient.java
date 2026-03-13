@@ -1,14 +1,17 @@
 package com.college.icrs.ai.config;
 
 
+import com.college.icrs.config.IcrsProperties;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
+import java.time.Duration;
 
 @Configuration
+@lombok.RequiredArgsConstructor
 public class AiClient {
 
     @Value("${ai.apikey}")
@@ -20,7 +23,7 @@ public class AiClient {
     @Value("${ai.modelname:deepseek-chat}")
     private String modelName;
 
-
+    private final IcrsProperties icrsProperties;
 
     @Bean
     public ChatModel chatModel() {
@@ -36,6 +39,8 @@ public class AiClient {
                 .apiKey(apiKey)
                 .baseUrl(normalizeBaseUrl(baseUrl))
                 .modelName(modelName)
+                .timeout(Duration.ofSeconds(Math.max(icrsProperties.getAi().getTimeoutSeconds(), 1)))
+                .maxCompletionTokens(Math.max(icrsProperties.getAi().getMaxCompletionTokens(), 1))
                 .build();
     }
 

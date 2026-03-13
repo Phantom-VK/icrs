@@ -1,7 +1,5 @@
 package com.college.icrs.config;
 
-
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,17 +17,8 @@ public class EmailConfig {
     @Value("${spring.mail.password}")
     private String password;
 
-
-//    @PostConstruct
-//    public void verify() {
-//        System.out.println("Email username: " + emailUsername);
-//        System.out.println("Email password: " + (password != null ? "*******" : "null"));
-//    }
-
-
     @Bean
     public JavaMailSender javaMailSender() {
-//        verify();
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 
         mailSender.setHost("smtp.gmail.com");
@@ -41,9 +30,7 @@ public class EmailConfig {
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.debug", "true");
 
         return mailSender;
     }
 }
-

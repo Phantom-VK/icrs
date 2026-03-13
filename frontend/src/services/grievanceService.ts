@@ -1,6 +1,8 @@
 import api from "./apiClient";
 import { getErrorMessage } from "../utils/error";
 import type { Category } from "../types/category";
+import type { Grievance } from "../types/grievance";
+import { sortGrievancesByLatest } from "../utils/grievanceFilters";
 
 export interface GrievanceData {
   title: string;
@@ -21,6 +23,10 @@ export interface Comment {
   createdAt?: string;
 }
 
+let myGrievancesRequest: Promise<Grievance[]> | null = null;
+let categoriesRequest: Promise<Category[]> | null = null;
+const allGrievancesRequests = new Map<string, Promise<{ content?: Grievance[] } | Grievance[]>>();
+
 const grievanceService = {
   submit: async (data: GrievanceData) => {
     try {
@@ -36,23 +42,33 @@ const grievanceService = {
   },
 
   getMyGrievances: async () => {
-    try {
-      console.log("Fetching grievances of logged-in student...");
-      const response = await api.get("/grievances/student/me");
-      console.log("Grievances fetched:", response.data);
-      return response.data;
-    } catch (error: any) {
-      const message = getErrorMessage(error, "Unable to fetch your grievances.");
-      console.error("Failed to fetch student's grievances:", message);
-      throw new Error(message);
+    if (myGrievancesRequest) {
+      return myGrievancesRequest;
     }
+
+    myGrievancesRequest = (async () => {
+      try {
+        console.log("Fetching grievances of logged-in student...");
+        const response = await api.get("/grievances/student/me");
+        console.log("Grievances fetched:", response.data);
+        return sortGrievancesByLatest(response.data as Grievance[]);
+      } catch (error: any) {
+        const message = getErrorMessage(error, "Unable to fetch your grievances.");
+        console.error("Failed to fetch student's grievances:", message);
+        throw new Error(message);
+      } finally {
+        myGrievancesRequest = null;
+      }
+    })();
+
+    return myGrievancesRequest;
   },
 
   getById: async (id: number) => {
     try {
       console.log(`Fetching grievance with ID: ${id}`);
       const response = await api.get(`/grievances/${id}`);
-      return response.data;
+      return response.data as Grievance;
     } catch (error: any) {
       const message = getErrorMessage(error, "Grievance not found.");
       console.error("Failed to fetch grievance:", message);
@@ -61,18 +77,31 @@ const grievanceService = {
   },
 
   getAll: async (page = 0, size = 10, sortBy = "createdAt", direction = "desc") => {
-    try {
-      console.log("Fetching all grievances...");
-      const response = await api.get("/grievances", {
-        params: { page, size, sortBy, direction },
-      });
-      console.log("All grievances fetched:", response.data);
-      return response.data;
-    } catch (error: any) {
-      const message = getErrorMessage(error, "Unable to fetch grievances.");
-      console.error("Failed to fetch grievances:", message);
-      throw new Error(message);
+    const requestKey = JSON.stringify({ page, size, sortBy, direction });
+    const existingRequest = allGrievancesRequests.get(requestKey);
+    if (existingRequest) {
+      return existingRequest;
     }
+
+    const request = (async () => {
+      try {
+        console.log("Fetching all grievances...");
+        const response = await api.get("/grievances", {
+          params: { page, size, sortBy, direction },
+        });
+        console.log("All grievances fetched:", response.data);
+        return response.data as { content?: Grievance[] } | Grievance[];
+      } catch (error: any) {
+        const message = getErrorMessage(error, "Unable to fetch grievances.");
+        console.error("Failed to fetch grievances:", message);
+        throw new Error(message);
+      } finally {
+        allGrievancesRequests.delete(requestKey);
+      }
+    })();
+
+    allGrievancesRequests.set(requestKey, request);
+    return request;
   },
 
   updateStatus: async (id: number, status: string) => {
@@ -119,13 +148,23 @@ const grievanceService = {
   },
 
   getCategories: async (): Promise<Category[]> => {
-    try {
-      const response = await api.get("/categories");
-      return response.data as Category[];
-    } catch (error: any) {
-      const message = getErrorMessage(error, "Unable to load categories.");
-      throw new Error(message);
+    if (categoriesRequest) {
+      return categoriesRequest;
     }
+
+    categoriesRequest = (async () => {
+      try {
+        const response = await api.get("/categories");
+        return response.data as Category[];
+      } catch (error: any) {
+        const message = getErrorMessage(error, "Unable to load categories.");
+        throw new Error(message);
+      } finally {
+        categoriesRequest = null;
+      }
+    })();
+
+    return categoriesRequest;
   },
 };
 

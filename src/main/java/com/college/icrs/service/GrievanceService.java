@@ -1,5 +1,8 @@
 package com.college.icrs.service;
 
+import com.college.icrs.exception.ForbiddenOperationException;
+import com.college.icrs.exception.InvalidRequestException;
+import com.college.icrs.exception.ResourceNotFoundException;
 import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Priority;
 import com.college.icrs.model.Sentiment;
@@ -11,10 +14,12 @@ import com.college.icrs.repository.GrievanceRepository;
 import com.college.icrs.repository.StatusHistoryRepository;
 import com.college.icrs.repository.UserRepository;
 import com.college.icrs.repository.CommentRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -31,10 +36,11 @@ public class GrievanceService {
     private final StatusHistoryRepository statusHistoryRepository;
     private final CommentRepository commentRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     public Grievance createGrievance(Grievance grievance, Long studentId) {
         User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Student not found with id: " + studentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + studentId));
 
         grievance.setStudent(student);
         grievance.setStatus(Status.SUBMITTED);
@@ -50,80 +56,63 @@ public class GrievanceService {
         }
 
         Grievance saved = grievanceRepository.save(grievance);
-        System.out.println("Grievance created for student ID " + studentId + " | Grievance ID: " + saved.getId());
         trySendSubmissionEmail(student, saved);
         return saved;
     }
 
-    public Grievance saveGrievance(Grievance grievance) {
-        Grievance saved = grievanceRepository.save(grievance);
-        System.out.println("Grievance saved: ID=" + saved.getId());
-        return saved;
-    }
-
+    @Transactional(readOnly = true)
     public Grievance getGrievanceById(Long id) {
         return grievanceRepository.findById(id)
-                .orElseThrow(() -> new java.util.NoSuchElementException("Grievance not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Grievance not found with id: " + id));
     }
 
     public Grievance updateGrievance(Long id, Grievance grievanceDetails) {
         Grievance grievance = getGrievanceById(id);
+        Status fromStatus = grievance.getStatus();
+        Status targetStatus = fromStatus;
 
         grievance.setTitle(grievanceDetails.getTitle());
         grievance.setDescription(grievanceDetails.getDescription());
         grievance.setCategory(grievanceDetails.getCategory());
         grievance.setSubcategory(grievanceDetails.getSubcategory());
         if (grievanceDetails.getStatus() != null) {
-            Status targetStatus = grievanceDetails.getStatus();
+            targetStatus = grievanceDetails.getStatus();
             reconcileAiFlagsForManualStatusChange(grievance, targetStatus);
             grievance.setStatus(targetStatus);
         }
 
-        return grievanceRepository.save(grievance);
+        Grievance saved = grievanceRepository.save(grievance);
+        appendStatusHistory(saved, fromStatus, targetStatus, null);
+        if (fromStatus != targetStatus) {
+            trySendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, targetStatus);
+        }
+        return saved;
     }
 
     public void deleteGrievance(Long id) {
         Grievance grievance = getGrievanceById(id);
         grievanceRepository.delete(grievance);
-        System.out.println("Grievance deleted: ID=" + id);
     }
 
+    @Transactional(readOnly = true)
     public Page<Grievance> getAllGrievances(Pageable pageable) {
         return grievanceRepository.findAll(pageable);
     }
 
+    @Transactional(readOnly = true)
     public List<Grievance> getGrievancesByStudent(Long studentId) {
-        return grievanceRepository.findByStudentId(studentId);
+        return grievanceRepository.findByStudentIdOrderByCreatedAtDesc(studentId);
     }
 
+    @Transactional(readOnly = true)
     public Page<Grievance> getGrievancesByStatus(Status status, Pageable pageable) {
         return grievanceRepository.findByStatus(status, pageable);
-    }
-
-    public Page<Grievance> getGrievancesByPriority(Priority priority, Pageable pageable) {
-        return grievanceRepository.findByPriority(priority, pageable);
-    }
-
-    public Page<Grievance> getGrievancesBySentiment(Sentiment sentiment, Pageable pageable) {
-        return grievanceRepository.findBySentiment(sentiment, pageable);
-    }
-
-    public Page<Grievance> getAiResolvedGrievances(boolean aiResolved, Pageable pageable) {
-        return grievanceRepository.findByAiResolved(aiResolved, pageable);
-    }
-
-    public List<Grievance> getGrievancesByCategoryAndStatus(Long categoryId, Status status) {
-        return grievanceRepository.findByCategoryIdAndStatus(categoryId, status);
-    }
-
-    public List<Grievance> getGrievancesByFaculty(Long facultyId) {
-        return grievanceRepository.findByAssignedToId(facultyId);
     }
 
     public Grievance assignGrievanceToFaculty(Long grievanceId, Long facultyId) {
         Grievance grievance = getGrievanceById(grievanceId);
         User faculty = userRepository.findById(facultyId)
-                .orElseThrow(() -> new RuntimeException("Faculty not found with id: " + facultyId));
+                .orElseThrow(() -> new ResourceNotFoundException("Faculty not found with id: " + facultyId));
 
         reconcileAiFlagsForManualStatusChange(grievance, Status.IN_PROGRESS);
         grievance.setAssignedTo(faculty);
@@ -142,16 +131,6 @@ public class GrievanceService {
         appendStatusHistory(saved, fromStatus, status, null);
 
         trySendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, status);
-        return saved;
-    }
-
-    public Grievance resolveGrievance(Long grievanceId) {
-        Grievance grievance = getGrievanceById(grievanceId);
-        Status fromStatus = grievance.getStatus();
-        grievance.setAiResolved(false);
-        grievance.setStatus(Status.RESOLVED);
-        Grievance saved = grievanceRepository.save(grievance);
-        appendStatusHistory(saved, fromStatus, Status.RESOLVED, "Resolved manually");
         return saved;
     }
 
@@ -175,6 +154,31 @@ public class GrievanceService {
         grievance.setAiDecisionAt(aiDecisionAt != null ? aiDecisionAt : LocalDateTime.now());
         grievance.setAiResolved(false);
         return grievanceRepository.save(grievance);
+    }
+
+    public Grievance updateAiRecommendation(
+            Long grievanceId,
+            String aiResolutionText,
+            String aiResolutionComment,
+            Double aiConfidence,
+            String aiModelName,
+            String aiDecisionSource,
+            LocalDateTime aiDecisionAt
+    ) {
+        Grievance grievance = getGrievanceById(grievanceId);
+        Status currentStatus = grievance.getStatus();
+        grievance.setAiResolved(false);
+        grievance.setAiResolutionText(aiResolutionText);
+        grievance.setAiResolutionComment(aiResolutionComment);
+        if (aiConfidence != null) {
+            grievance.setAiConfidence(aiConfidence);
+        }
+        grievance.setAiModelName(aiModelName);
+        grievance.setAiDecisionSource(aiDecisionSource);
+        grievance.setAiDecisionAt(aiDecisionAt != null ? aiDecisionAt : LocalDateTime.now());
+        Grievance saved = grievanceRepository.save(grievance);
+        appendStatusHistory(saved, currentStatus, currentStatus, "Redirected to the corresponding faculty by AI");
+        return saved;
     }
 
     public Grievance markResolvedByAi(
@@ -203,15 +207,45 @@ public class GrievanceService {
         return saved;
     }
 
+    public com.college.icrs.dto.CommentResponseDTO addSystemComment(
+            Long grievanceId,
+            String systemAuthorEmail,
+            String body
+    ) {
+        Grievance grievance = getGrievanceById(grievanceId);
+        User author = ensureSystemAuthor(systemAuthorEmail);
+
+        if (author.getRole() == com.college.icrs.model.Role.STUDENT) {
+            throw new InvalidRequestException("System author must not be a student.");
+        }
+
+        Comment comment = new Comment();
+        comment.setGrievance(grievance);
+        comment.setAuthor(author);
+        comment.setBody(body);
+
+        Comment saved = commentRepository.save(comment);
+        if (grievance.getStudent() != null) {
+            trySendCommentEmailToStudent(grievance.getStudent(), grievance, author, body);
+        }
+        com.college.icrs.dto.CommentResponseDTO dto = new com.college.icrs.dto.CommentResponseDTO();
+        dto.setId(saved.getId());
+        dto.setBody(saved.getBody());
+        dto.setAuthorName(author.getUsername());
+        dto.setAuthorEmail(author.getEmail());
+        dto.setCreatedAt(saved.getCreatedAt());
+        return dto;
+    }
+
     public com.college.icrs.dto.CommentResponseDTO addComment(Long grievanceId, String authorEmail, String body) {
         Grievance grievance = getGrievanceById(grievanceId);
         User author = userRepository.findByEmail(authorEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
         // permission: students can comment only on their own grievance; faculty/admin allowed
         if (author.getRole() == com.college.icrs.model.Role.STUDENT) {
             if (grievance.getStudent() == null || !grievance.getStudent().getId().equals(author.getId())) {
-                throw new RuntimeException("Students can only comment on their own grievances.");
+                throw new ForbiddenOperationException("Students can only comment on their own grievances.");
             }
         }
 
@@ -238,14 +272,15 @@ public class GrievanceService {
         return dto;
     }
 
+    @Transactional(readOnly = true)
     public List<com.college.icrs.dto.CommentResponseDTO> getComments(Long grievanceId, String requesterEmail) {
         Grievance grievance = getGrievanceById(grievanceId);
         User requester = userRepository.findByEmail(requesterEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
         if (requester.getRole() == com.college.icrs.model.Role.STUDENT) {
             if (grievance.getStudent() == null || !grievance.getStudent().getId().equals(requester.getId())) {
-                throw new RuntimeException("Students can only view their own grievances.");
+                throw new ForbiddenOperationException("Students can only view their own grievances.");
             }
         }
 
@@ -265,17 +300,14 @@ public class GrievanceService {
                 .toList();
     }
 
-    public List<Grievance> searchGrievancesByTitle(String title) {
-        return grievanceRepository.findByTitleContainingIgnoreCaseOrAiTitleContainingIgnoreCase(title, title);
-    }
-
+    @Transactional(readOnly = true)
     public Map<String, Long> getGrievanceStatistics() {
         Map<String, Long> stats = new HashMap<>();
-        long resolvedCount = grievanceRepository.findByStatus(Status.RESOLVED, Pageable.unpaged()).getTotalElements();
+        long resolvedCount = grievanceRepository.countByStatus(Status.RESOLVED);
         long aiResolvedCount = grievanceRepository.countByAiResolvedTrue();
         stats.put("total", grievanceRepository.count());
-        stats.put("submitted", grievanceRepository.findByStatus(Status.SUBMITTED, Pageable.unpaged()).getTotalElements());
-        stats.put("inProgress", grievanceRepository.findByStatus(Status.IN_PROGRESS, Pageable.unpaged()).getTotalElements());
+        stats.put("submitted", grievanceRepository.countByStatus(Status.SUBMITTED));
+        stats.put("inProgress", grievanceRepository.countByStatus(Status.IN_PROGRESS));
         stats.put("resolved", resolvedCount);
         stats.put("aiResolved", aiResolvedCount);
         stats.put("humanResolved", Math.max(resolvedCount - aiResolvedCount, 0));
@@ -302,7 +334,7 @@ public class GrievanceService {
     }
 
     private void appendStatusHistory(Grievance grievance, Status fromStatus, Status toStatus, String reason) {
-        if (fromStatus == toStatus) {
+        if (fromStatus == toStatus && !StringUtils.hasText(reason)) {
             return;
         }
         StatusHistory history = new StatusHistory();
@@ -311,6 +343,20 @@ public class GrievanceService {
         history.setToStatus(toStatus);
         history.setReason(reason);
         statusHistoryRepository.save(history);
+    }
+
+    private User ensureSystemAuthor(String systemAuthorEmail) {
+        return userRepository.findByEmail(systemAuthorEmail).orElseGet(() -> {
+            User systemUser = new User();
+            systemUser.setUsername("AI System");
+            systemUser.setEmail(systemAuthorEmail);
+            systemUser.setPassword(passwordEncoder.encode("ai-system-disabled-login"));
+            systemUser.setRole(com.college.icrs.model.Role.ADMIN);
+            systemUser.setEnabled(true);
+            systemUser.setDepartment("SYSTEM");
+            systemUser.setStudentId("AI_SYSTEM");
+            return userRepository.save(systemUser);
+        });
     }
 
     private void trySendSubmissionEmail(User student, Grievance grievance) {

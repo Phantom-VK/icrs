@@ -3,6 +3,11 @@ package com.college.icrs.service;
 import com.college.icrs.dto.LoginUserDto;
 import com.college.icrs.dto.RegisterUserDto;
 import com.college.icrs.dto.VerifyUserDto;
+import com.college.icrs.exception.ConflictException;
+import com.college.icrs.exception.ExternalServiceException;
+import com.college.icrs.exception.InvalidRequestException;
+import com.college.icrs.exception.ResourceNotFoundException;
+import com.college.icrs.exception.UnauthorizedException;
 import com.college.icrs.model.Role;
 import com.college.icrs.model.User;
 import com.college.icrs.repository.UserRepository;
@@ -10,15 +15,11 @@ import com.college.icrs.responses.LoginResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +34,7 @@ public class AuthenticationService {
     /** Register a new user and send verification email */
     public User signup(RegisterUserDto input) {
         if (userRepository.findByEmail(input.getEmail()).isPresent()) {
-            throw new RuntimeException("User with email " + input.getEmail() + " already exists.");
+            throw new ConflictException("User with email " + input.getEmail() + " already exists.");
         }
 
         User user = new User();
@@ -47,7 +48,6 @@ public class AuthenticationService {
         user.setEnabled(false); // must verify before login
         user.setVerificationCode(generateVerificationCode());
         user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
-        System.out.println("🧾 Signup DTO received: " + input);
 
         userRepository.save(user);
         sendVerificationEmail(user);
@@ -57,15 +57,13 @@ public class AuthenticationService {
 
     /** Login with email and password, returns JWT token + expiry */
     public LoginResponse login(LoginUserDto input) {
-        // Verify user exists
         User user = userRepository.findByEmail(input.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + input.getEmail()));
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password."));
 
         if (!user.isEnabled()) {
-            throw new RuntimeException("Account not verified. Please verify your email.");
+            throw new UnauthorizedException("Account not verified. Please verify your email.");
         }
 
-        // Spring Security authentication
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(input.getEmail(), input.getPassword()));
 
@@ -83,15 +81,15 @@ public class AuthenticationService {
     /** Verify user using email + verification code */
     public void verifyUser(VerifyUserDto input) {
         User user = userRepository.findByEmail(input.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
         if (user.getVerificationCodeExpiresAt() == null ||
                 user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Verification code expired. Please request a new one.");
+            throw new InvalidRequestException("Verification code expired. Please request a new one.");
         }
 
         if (!user.getVerificationCode().equals(input.getVerificationCode())) {
-            throw new RuntimeException("Invalid verification code.");
+            throw new InvalidRequestException("Invalid verification code.");
         }
 
         user.setEnabled(true);
@@ -103,10 +101,10 @@ public class AuthenticationService {
     /** Resend verification code for unverified accounts */
     public void resendVerificationCode(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
         if (user.isEnabled()) {
-            throw new RuntimeException("Account already verified.");
+            throw new InvalidRequestException("Account already verified.");
         }
 
         user.setVerificationCode(generateVerificationCode());
@@ -126,30 +124,13 @@ public class AuthenticationService {
         try {
             emailService.sendVerificationEmail(user.getEmail(), subject, html);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send verification email: " + e.getMessage());
+            throw new ExternalServiceException("Failed to send verification email.");
         }
     }
 
     /** Generate a secure random 6-digit code */
     private String generateVerificationCode() {
-        int code = new Random().nextInt(900000) + 100000; // 100000–999999
+        int code = ThreadLocalRandom.current().nextInt(100000, 1_000_000);
         return String.valueOf(code);
-    }
-
-    /** Retrieve the authenticated user from the SecurityContext */
-    public User getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated() ||
-                authentication.getPrincipal().equals("anonymousUser")) {
-            return null;
-        }
-
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof UserDetails userDetails) {
-            Optional<User> user = userRepository.findByEmail(userDetails.getUsername());
-            return user.orElse(null);
-        }
-        return null;
     }
 }

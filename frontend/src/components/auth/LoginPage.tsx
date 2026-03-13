@@ -12,9 +12,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.png";
 import authService from "../../services/authService";
-import axios from "axios";
 import LoadingOverlay from "../common/LoadingOverlay";
+import ErrorDialog from "../common/ErrorDialog";
 import { useSnackbar } from "notistack";
+import { getCommonAuthErrorMessage } from "../../utils/error";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,64 +24,64 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState("");
 
   /** Handle login */
-const handleLogin = async () => {
-  if (!email || !password) {
-    setMessage("Please enter both email and password.");
-    return;
-  }
-
-  setLoading(true);
-  setMessage("");
-
-  try {
-    const result = await authService.login(email.trim(), password.trim());
-
-    if (!result?.token) {
-      setMessage("Invalid response from server.");
+  const handleLogin = async () => {
+    if (!email || !password) {
+      const validationMessage = "Please enter both email and password.";
+      setMessage(validationMessage);
+      setDialogMessage(validationMessage);
       return;
     }
 
-    setMessage("Login successful!");
-    enqueueSnackbar("Login successful", { variant: "success" });
+    setLoading(true);
+    setMessage("");
+    setDialogMessage("");
 
-    // Store session data
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("role", result.role);
-    localStorage.setItem("username", result.username);
-    localStorage.setItem("email", result.email);
+    try {
+      const result = await authService.login(email.trim(), password.trim());
 
-    // Redirect based on role
-    setTimeout(() => {
-      if (result.role === "FACULTY") {
-        console.log("➡ Redirecting to FACULTY dashboard");
-        navigate("/faculty/dashboard");
-      } else {
-        console.log("➡ Redirecting to STUDENT dashboard");
-        navigate("/auth/student-dashboard");
+      if (!result?.token) {
+        const invalidResponseMessage = "Invalid response from server.";
+        setMessage(invalidResponseMessage);
+        setDialogMessage(invalidResponseMessage);
+        return;
       }
-    }, 500);
 
-  } catch (error: unknown) {
-    console.error("Login error:", error);
+      setMessage("Login successful!");
+      enqueueSnackbar("Login successful", { variant: "success" });
 
-    if (axios.isAxiosError(error)) {
-      const backendMessage =
-        typeof error.response?.data === "string"
-          ? error.response.data
-          : error.response?.data?.message || "Invalid credentials.";
+      // Store session data
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("role", result.role);
+      localStorage.setItem("username", result.username);
+      localStorage.setItem("email", result.email);
 
-      setMessage(backendMessage);
-      enqueueSnackbar(backendMessage, { variant: "error" });
-    } else {
-      setMessage("Unexpected error occurred.");
-      enqueueSnackbar("Unexpected error occurred.", { variant: "error" });
+      // Redirect based on role
+      setTimeout(() => {
+        if (result.role === "FACULTY") {
+          console.log("➡ Redirecting to FACULTY dashboard");
+          navigate("/faculty/dashboard");
+        } else {
+          console.log("➡ Redirecting to STUDENT dashboard");
+          navigate("/auth/student-dashboard");
+        }
+      }, 500);
+    } catch (error: unknown) {
+      console.error("Login error:", error);
+      const rawMessage =
+        error instanceof Error && error.message
+          ? error.message
+          : "Unexpected error occurred.";
+      const friendlyMessage = getCommonAuthErrorMessage(rawMessage);
+      setMessage(friendlyMessage);
+      setDialogMessage(friendlyMessage);
+      enqueueSnackbar(friendlyMessage, { variant: "error" });
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
 
@@ -96,6 +97,12 @@ const handleLogin = async () => {
       }}
     >
       <LoadingOverlay show={loading} message="Signing in..." />
+      <ErrorDialog
+        open={Boolean(dialogMessage)}
+        title="Sign-in failed"
+        message={dialogMessage}
+        onClose={() => setDialogMessage("")}
+      />
       <Card
         sx={{
           width: "100%",

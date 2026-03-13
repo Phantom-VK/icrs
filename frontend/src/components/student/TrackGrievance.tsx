@@ -3,18 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import grievanceService from "../../services/grievanceService";
 import type { Comment } from "../../services/grievanceService";
 import { useDebounce } from "../../utils/useDebounce";
-import type { StatusHistory } from "../../types/statusHistory";
-
-interface Grievance {
-  id: number;
-  title: string;
-  description: string;
-  category: string;
-  subcategory: string;
-  registrationNumber: string;
-  status: "SUBMITTED" | "IN_PROGRESS" | "RESOLVED" | "REJECTED";
-  statusHistory?: StatusHistory[];
-}
+import { sortGrievancesByLatest } from "../../utils/grievanceFilters";
+import type { Grievance } from "../../types/grievance";
 
 const TrackGrievance: React.FC = () => {
   const navigate = useNavigate();
@@ -87,20 +77,24 @@ const TrackGrievance: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
-  const filteredGrievances = grievances.filter((g) => {
-    const term = debouncedSearch.toLowerCase();
-    const title = (g.title || "").toLowerCase();
-    const desc = (g.description || "").toLowerCase();
-    const category = (g.category || "").toLowerCase();
-    const regNo = (g.registrationNumber || "").toLowerCase();
-    const matchesSearch =
-      title.includes(term) ||
-      desc.includes(term) ||
-      category.includes(term) ||
-      regNo.includes(term);
-    const matchesStatus = filterStatus === "All" || g.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredGrievances = sortGrievancesByLatest(
+    grievances.filter((g) => {
+      const term = debouncedSearch.toLowerCase();
+      const title = (g.title || "").toLowerCase();
+      const aiTitle = (g.aiTitle || "").toLowerCase();
+      const desc = (g.description || "").toLowerCase();
+      const category = (g.category || "").toLowerCase();
+      const regNo = (g.registrationNumber || "").toLowerCase();
+      const matchesSearch =
+        title.includes(term) ||
+        aiTitle.includes(term) ||
+        desc.includes(term) ||
+        category.includes(term) ||
+        regNo.includes(term);
+      const matchesStatus = filterStatus === "All" || g.status === filterStatus;
+      return matchesSearch && matchesStatus;
+    })
+  );
 
   const statusColors: Record<string, string> = {
     SUBMITTED: "black",
@@ -258,18 +252,34 @@ const TrackGrievance: React.FC = () => {
                   }}
                 >
                   <strong>{g.title}</strong>
-                  <span
-                    style={{
-                      padding: "4px 8px",
-                      borderRadius: "8px",
-                      backgroundColor: "#f0f0f0",
-                      color: statusColors[g.status],
-                      fontSize: "12px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {g.status.replace("_", " ")}
-                  </span>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                    <span
+                      style={{
+                        padding: "4px 8px",
+                        borderRadius: "8px",
+                        backgroundColor: "#f0f0f0",
+                        color: statusColors[g.status],
+                        fontSize: "12px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {g.status.replace("_", " ")}
+                    </span>
+                    {g.aiResolved && (
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "8px",
+                          backgroundColor: "#e8f5e9",
+                          color: "#1b5e20",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Resolved by AI
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {expandedId === g.id && (
@@ -288,12 +298,30 @@ const TrackGrievance: React.FC = () => {
                     <p>
                       <strong>Category:</strong> {g.category}
                     </p>
-                    <p>
-                      <strong>Subcategory:</strong> {g.subcategory}
-                    </p>
+                    {g.subcategory && (
+                      <p>
+                        <strong>Subcategory:</strong> {g.subcategory}
+                      </p>
+                    )}
+                    {g.aiTitle && g.aiTitle !== g.title && (
+                      <p>
+                        <strong>AI Summary Title:</strong> {g.aiTitle}
+                      </p>
+                    )}
+                    {g.aiDecisionAt && (
+                      <p>
+                        <strong>AI Decision Time:</strong> {new Date(g.aiDecisionAt).toLocaleString()}
+                      </p>
+                    )}
                     <p>
                       <strong>Description:</strong> {g.description}
                     </p>
+                    {g.aiResolutionText && (
+                      <div style={{ marginTop: "10px", padding: "10px", background: "#ecf7ff", borderRadius: "8px" }}>
+                        <strong>AI Resolution:</strong>
+                        <div style={{ marginTop: "4px" }}>{g.aiResolutionText}</div>
+                      </div>
+                    )}
                     <div style={{ marginTop: "10px" }}>
                       <strong>Status History:</strong>
                       {g.statusHistory && g.statusHistory.length > 0 ? (
@@ -347,7 +375,9 @@ const TrackGrievance: React.FC = () => {
                             }}
                           >
                             <div style={{ fontWeight: 600 }}>
-                              {c.authorName || "User"} ({c.authorEmail || ""})
+                              {c.authorEmail === "ai.system@icrs.local"
+                                ? "AI System"
+                                : `${c.authorName || "User"} (${c.authorEmail || ""})`}
                             </div>
                             <div>{c.body}</div>
                             {c.createdAt && (

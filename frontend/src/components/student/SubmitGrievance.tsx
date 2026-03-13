@@ -86,14 +86,6 @@ const SubmitGrievance: React.FC = () => {
 
     setLoading(true);
     try {
-      let user = null;
-      try {
-        user = await authService.getCurrentUser();
-        console.log("Logged-in user:", user?.email || "Unknown user");
-      } catch {
-        console.warn("Could not fetch user info, proceeding anyway.");
-      }
-
       const selectedCategory = categories.find((c) => c.id === categoryId);
       const selectedSub = currentSubcategories.find((s) => s.id === subCategoryId);
       const title = `${selectedCategory?.name || "Grievance"}${selectedSub ? ` - ${selectedSub.name}` : ""}`;
