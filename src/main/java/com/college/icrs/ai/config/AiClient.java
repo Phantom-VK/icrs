@@ -2,8 +2,10 @@ package com.college.icrs.ai.config;
 
 
 import com.college.icrs.config.IcrsProperties;
+import com.college.icrs.logging.IcrsLog;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +14,7 @@ import java.time.Duration;
 
 @Configuration
 @lombok.RequiredArgsConstructor
+@Slf4j
 public class AiClient {
 
     @Value("${ai.apikey}")
@@ -34,6 +37,12 @@ public class AiClient {
         if (baseUrl == null || baseUrl.isBlank()) {
             throw new IllegalStateException("AI base URL missing. Set ai.baseurl or DEEPSEEK_API_BASE/OPENAI_API_BASE.");
         }
+
+        log.info(IcrsLog.event("ai.chat-model.initialized",
+                "modelName", modelName,
+                "baseUrl", normalizeBaseUrl(baseUrl),
+                "timeoutSeconds", icrsProperties.getAi().getTimeoutSeconds(),
+                "maxCompletionTokens", icrsProperties.getAi().getMaxCompletionTokens()));
 
         return OpenAiChatModel.builder()
                 .apiKey(apiKey)

@@ -46,3 +46,6 @@ documents/*.pdf
 # Local Python artifacts
 **/.venv/
 **/__pycache__/
+
+# Application logs
+logs/*.log

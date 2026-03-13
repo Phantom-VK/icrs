@@ -3,6 +3,7 @@ package com.college.icrs.service;
 import com.college.icrs.exception.ForbiddenOperationException;
 import com.college.icrs.exception.InvalidRequestException;
 import com.college.icrs.exception.ResourceNotFoundException;
+import com.college.icrs.logging.IcrsLog;
 import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Priority;
 import com.college.icrs.model.Sentiment;
@@ -20,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -29,6 +31,7 @@ import java.util.Map;
 @Service
 @Transactional
 @lombok.RequiredArgsConstructor
+@Slf4j
 public class GrievanceService {
 
     private final GrievanceRepository grievanceRepository;
@@ -39,6 +42,7 @@ public class GrievanceService {
     private final PasswordEncoder passwordEncoder;
 
     public Grievance createGrievance(Grievance grievance, Long studentId) {
+        log.info(IcrsLog.event("grievance.create.start", "studentId", studentId, "title", grievance.getTitle()));
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + studentId));
 
@@ -56,6 +60,10 @@ public class GrievanceService {
         }
 
         Grievance saved = grievanceRepository.save(grievance);
+        log.info(IcrsLog.event("grievance.create.completed",
+                "grievanceId", saved.getId(),
+                "status", saved.getStatus(),
+                "assignedTo", saved.getAssignedTo() != null ? saved.getAssignedTo().getEmail() : null));
         trySendSubmissionEmail(student, saved);
         return saved;
     }
@@ -123,6 +131,7 @@ public class GrievanceService {
     }
 
     public Grievance updateGrievanceStatus(Long grievanceId, Status status) {
+        log.info(IcrsLog.event("grievance.status.update.start", "grievanceId", grievanceId, "targetStatus", status));
         Grievance grievance = getGrievanceById(grievanceId);
         Status fromStatus = grievance.getStatus();
         reconcileAiFlagsForManualStatusChange(grievance, status);
@@ -131,6 +140,10 @@ public class GrievanceService {
         appendStatusHistory(saved, fromStatus, status, null);
 
         trySendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, status);
+        log.info(IcrsLog.event("grievance.status.update.completed",
+                "grievanceId", grievanceId,
+                "fromStatus", fromStatus,
+                "toStatus", status));
         return saved;
     }
 
@@ -144,6 +157,7 @@ public class GrievanceService {
             String aiDecisionSource,
             LocalDateTime aiDecisionAt
     ) {
+        log.info(IcrsLog.event("grievance.ai.metadata.update.start", "grievanceId", grievanceId));
         Grievance grievance = getGrievanceById(grievanceId);
         grievance.setPriority(priority);
         grievance.setSentiment(sentiment);
@@ -153,7 +167,13 @@ public class GrievanceService {
         grievance.setAiDecisionSource(aiDecisionSource);
         grievance.setAiDecisionAt(aiDecisionAt != null ? aiDecisionAt : LocalDateTime.now());
         grievance.setAiResolved(false);
-        return grievanceRepository.save(grievance);
+        Grievance saved = grievanceRepository.save(grievance);
+        log.info(IcrsLog.event("grievance.ai.metadata.update.completed",
+                "grievanceId", grievanceId,
+                "priority", priority,
+                "sentiment", sentiment,
+                "confidence", aiConfidence));
+        return saved;
     }
 
     public Grievance updateAiRecommendation(
@@ -165,6 +185,7 @@ public class GrievanceService {
             String aiDecisionSource,
             LocalDateTime aiDecisionAt
     ) {
+        log.info(IcrsLog.event("grievance.ai.manual-review.start", "grievanceId", grievanceId));
         Grievance grievance = getGrievanceById(grievanceId);
         Status currentStatus = grievance.getStatus();
         grievance.setAiResolved(false);
@@ -178,6 +199,10 @@ public class GrievanceService {
         grievance.setAiDecisionAt(aiDecisionAt != null ? aiDecisionAt : LocalDateTime.now());
         Grievance saved = grievanceRepository.save(grievance);
         appendStatusHistory(saved, currentStatus, currentStatus, "Redirected to the corresponding faculty by AI");
+        log.info(IcrsLog.event("grievance.ai.manual-review.completed",
+                "grievanceId", grievanceId,
+                "status", saved.getStatus(),
+                "confidence", grievance.getAiConfidence()));
         return saved;
     }
 
@@ -189,6 +214,7 @@ public class GrievanceService {
             String aiModelName,
             String aiDecisionSource
     ) {
+        log.info(IcrsLog.event("grievance.ai.resolve.start", "grievanceId", grievanceId));
         Grievance grievance = getGrievanceById(grievanceId);
         Status fromStatus = grievance.getStatus();
 
@@ -204,6 +230,11 @@ public class GrievanceService {
         Grievance saved = grievanceRepository.save(grievance);
         appendStatusHistory(saved, fromStatus, Status.RESOLVED, "Resolved by AI");
         trySendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, Status.RESOLVED);
+        log.info(IcrsLog.event("grievance.ai.resolve.completed",
+                "grievanceId", grievanceId,
+                "fromStatus", fromStatus,
+                "toStatus", saved.getStatus(),
+                "confidence", aiConfidence));
         return saved;
     }
 
@@ -212,6 +243,7 @@ public class GrievanceService {
             String systemAuthorEmail,
             String body
     ) {
+        log.info(IcrsLog.event("grievance.system-comment.start", "grievanceId", grievanceId, "authorEmail", systemAuthorEmail));
         Grievance grievance = getGrievanceById(grievanceId);
         User author = ensureSystemAuthor(systemAuthorEmail);
 
@@ -234,10 +266,12 @@ public class GrievanceService {
         dto.setAuthorName(author.getUsername());
         dto.setAuthorEmail(author.getEmail());
         dto.setCreatedAt(saved.getCreatedAt());
+        log.info(IcrsLog.event("grievance.system-comment.completed", "grievanceId", grievanceId, "commentId", saved.getId()));
         return dto;
     }
 
     public com.college.icrs.dto.CommentResponseDTO addComment(Long grievanceId, String authorEmail, String body) {
+        log.info(IcrsLog.event("grievance.comment.start", "grievanceId", grievanceId, "authorEmail", authorEmail));
         Grievance grievance = getGrievanceById(grievanceId);
         User author = userRepository.findByEmail(authorEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found."));
@@ -269,6 +303,7 @@ public class GrievanceService {
         dto.setAuthorName(author.getUsername());
         dto.setAuthorEmail(author.getEmail());
         dto.setCreatedAt(saved.getCreatedAt());
+        log.info(IcrsLog.event("grievance.comment.completed", "grievanceId", grievanceId, "commentId", saved.getId(), "authorEmail", authorEmail));
         return dto;
     }
 
@@ -347,6 +382,7 @@ public class GrievanceService {
 
     private User ensureSystemAuthor(String systemAuthorEmail) {
         return userRepository.findByEmail(systemAuthorEmail).orElseGet(() -> {
+            log.info(IcrsLog.event("grievance.system-author.create", "email", systemAuthorEmail));
             User systemUser = new User();
             systemUser.setUsername("AI System");
             systemUser.setEmail(systemAuthorEmail);
@@ -361,6 +397,7 @@ public class GrievanceService {
 
     private void trySendSubmissionEmail(User student, Grievance grievance) {
         if (student == null) return;
+        log.info(IcrsLog.event("email.submission.prepare", "grievanceId", grievance.getId(), "studentEmail", student.getEmail()));
         String subject = "Grievance submitted: " + grievance.getTitle();
         String body = """
                 <p>Dear %s,</p>
@@ -372,6 +409,10 @@ public class GrievanceService {
 
     private void trySendAssignmentEmail(User student, User faculty, Grievance grievance) {
         if (student != null) {
+            log.info(IcrsLog.event("email.assignment.prepare",
+                    "grievanceId", grievance.getId(),
+                    "studentEmail", student.getEmail(),
+                    "facultyEmail", faculty != null ? faculty.getEmail() : null));
             String subject = "Grievance assigned: " + grievance.getTitle();
             String body = """
                     <p>Dear %s,</p>
@@ -384,6 +425,11 @@ public class GrievanceService {
 
     private void trySendStatusChangeEmail(User student, Grievance grievance, Status from, Status to) {
         if (student == null) return;
+        log.info(IcrsLog.event("email.status-change.prepare",
+                "grievanceId", grievance.getId(),
+                "studentEmail", student.getEmail(),
+                "fromStatus", from,
+                "toStatus", to));
         String subject = "Grievance status updated: " + grievance.getTitle();
         String body = """
                 <p>Dear %s,</p>
@@ -396,12 +442,15 @@ public class GrievanceService {
         try {
             emailService.sendAsync(to, subject, body);
         } catch (Exception e) {
-            // Do not block main flow on email failure; log to console for now.
-            System.err.println("Failed to send email to " + to + ": " + e.getMessage());
+            log.warn(IcrsLog.event("email.dispatch.failed", "recipient", to, "subject", subject, "reason", e.getClass().getSimpleName()), e);
         }
     }
 
     private void trySendCommentEmailToStudent(User student, Grievance grievance, User author, String commentBody) {
+        log.info(IcrsLog.event("email.comment-to-student.prepare",
+                "grievanceId", grievance.getId(),
+                "studentEmail", student.getEmail(),
+                "authorEmail", author.getEmail()));
         String subject = "New comment on your grievance: " + grievance.getTitle();
         String body = """
                 <p>Dear %s,</p>
@@ -412,6 +461,10 @@ public class GrievanceService {
     }
 
     private void trySendCommentEmailToFaculty(User faculty, Grievance grievance, User author, String commentBody) {
+        log.info(IcrsLog.event("email.comment-to-faculty.prepare",
+                "grievanceId", grievance.getId(),
+                "facultyEmail", faculty.getEmail(),
+                "authorEmail", author.getEmail()));
         String subject = "New student comment on grievance: " + grievance.getTitle();
         String body = """
                 <p>Hello %s,</p>

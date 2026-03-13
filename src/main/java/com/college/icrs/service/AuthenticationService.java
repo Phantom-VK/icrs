@@ -8,11 +8,13 @@ import com.college.icrs.exception.ExternalServiceException;
 import com.college.icrs.exception.InvalidRequestException;
 import com.college.icrs.exception.ResourceNotFoundException;
 import com.college.icrs.exception.UnauthorizedException;
+import com.college.icrs.logging.IcrsLog;
 import com.college.icrs.model.Role;
 import com.college.icrs.model.User;
 import com.college.icrs.repository.UserRepository;
 import com.college.icrs.responses.LoginResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthenticationService {
 
     private final UserRepository userRepository;
@@ -33,7 +36,9 @@ public class AuthenticationService {
 
     /** Register a new user and send verification email */
     public User signup(RegisterUserDto input) {
+        log.info(IcrsLog.event("auth.signup.start", "email", input.getEmail(), "studentId", input.getStudentId()));
         if (userRepository.findByEmail(input.getEmail()).isPresent()) {
+            log.warn(IcrsLog.event("auth.signup.conflict", "email", input.getEmail()));
             throw new ConflictException("User with email " + input.getEmail() + " already exists.");
         }
 
@@ -51,12 +56,14 @@ public class AuthenticationService {
 
         userRepository.save(user);
         sendVerificationEmail(user);
+        log.info(IcrsLog.event("auth.signup.completed", "email", user.getEmail(), "enabled", user.isEnabled()));
 
         return user;
     }
 
     /** Login with email and password, returns JWT token + expiry */
     public LoginResponse login(LoginUserDto input) {
+        log.info(IcrsLog.event("auth.login.start", "email", input.getEmail()));
         User user = userRepository.findByEmail(input.getEmail())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password."));
 
@@ -68,6 +75,7 @@ public class AuthenticationService {
                 new UsernamePasswordAuthenticationToken(input.getEmail(), input.getPassword()));
 
         String jwtToken = jwtService.generateToken(user);
+        log.info(IcrsLog.event("auth.login.token-issued", "email", user.getEmail(), "role", user.getRole()));
 
         return new LoginResponse(
                 jwtToken,
@@ -80,6 +88,7 @@ public class AuthenticationService {
 
     /** Verify user using email + verification code */
     public void verifyUser(VerifyUserDto input) {
+        log.info(IcrsLog.event("auth.verify.start", "email", input.getEmail()));
         User user = userRepository.findByEmail(input.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
@@ -96,10 +105,12 @@ public class AuthenticationService {
         user.setVerificationCode(null);
         user.setVerificationCodeExpiresAt(null);
         userRepository.save(user);
+        log.info(IcrsLog.event("auth.verify.completed", "email", user.getEmail()));
     }
 
     /** Resend verification code for unverified accounts */
     public void resendVerificationCode(String email) {
+        log.info(IcrsLog.event("auth.resend.start", "email", email));
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
@@ -112,6 +123,7 @@ public class AuthenticationService {
         userRepository.save(user);
 
         sendVerificationEmail(user);
+        log.info(IcrsLog.event("auth.resend.completed", "email", email));
     }
 
     /** Send verification email */
@@ -123,7 +135,9 @@ public class AuthenticationService {
 
         try {
             emailService.sendVerificationEmail(user.getEmail(), subject, html);
+            log.info(IcrsLog.event("auth.verification-email.sent", "email", user.getEmail()));
         } catch (Exception e) {
+            log.warn(IcrsLog.event("auth.verification-email.failed", "email", user.getEmail(), "reason", e.getClass().getSimpleName()));
             throw new ExternalServiceException("Failed to send verification email.");
         }
     }

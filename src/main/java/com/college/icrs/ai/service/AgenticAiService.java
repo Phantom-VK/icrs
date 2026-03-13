@@ -1,6 +1,7 @@
 package com.college.icrs.ai.service;
 
 import com.college.icrs.config.IcrsProperties;
+import com.college.icrs.logging.IcrsLog;
 import com.college.icrs.model.Category;
 import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Priority;
@@ -39,12 +40,15 @@ public class AgenticAiService {
     @Async("aiTaskExecutor")
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processNewGrievanceAsync(Long grievanceId) {
+        log.info(IcrsLog.event("ai.workflow.async-dispatched", "grievanceId", grievanceId));
         processNewGrievance(grievanceId);
     }
 
     public Grievance processNewGrievance(Long grievanceId) {
+        log.info(IcrsLog.event("ai.workflow.start", "grievanceId", grievanceId));
         Grievance grievance = grievanceService.getGrievanceById(grievanceId);
         if (!icrsProperties.getAi().isEnabled()) {
+            log.info(IcrsLog.event("ai.workflow.skipped", "grievanceId", grievanceId, "reason", "ai-disabled"));
             return grievance;
         }
 
@@ -52,6 +56,11 @@ public class AgenticAiService {
             SentimentAnalysisService.SentimentDecision sentimentDecision =
                     sentimentAnalysisService.analyze(grievance.getDescription());
             Sentiment sentiment = sentimentDecision.sentiment();
+            log.info(IcrsLog.event("ai.workflow.sentiment.completed",
+                    "grievanceId", grievanceId,
+                    "sentiment", sentiment,
+                    "confidence", sentimentDecision.confidence(),
+                    "model", sentimentDecision.modelName()));
             AiDecision decision = decide(grievance, sentiment);
 
             Priority priority = parsePriority(decision.getPriority());
@@ -73,6 +82,11 @@ public class AgenticAiService {
 
             Double finalConfidence = metadataConfidence;
             boolean autoResolve = shouldAutoResolve(grievance, decision, finalConfidence);
+            log.info(IcrsLog.event("ai.workflow.decision.completed",
+                    "grievanceId", grievanceId,
+                    "priority", priority,
+                    "autoResolve", autoResolve,
+                    "confidence", finalConfidence));
 
             if (autoResolve) {
                 String resolutionText = normalizeText(
@@ -98,6 +112,7 @@ public class AgenticAiService {
                         systemUserEmail(),
                         "[AI Auto-Resolution]\n" + resolutionText
                 );
+                log.info(IcrsLog.event("ai.workflow.completed", "grievanceId", grievanceId, "outcome", "auto-resolved"));
                 return updated;
             }
 
@@ -111,16 +126,18 @@ public class AgenticAiService {
                     decisionSource(),
                     LocalDateTime.now()
             );
+            log.info(IcrsLog.event("ai.workflow.completed", "grievanceId", grievanceId, "outcome", "manual-review"));
             return updated;
 
         } catch (Exception e) {
             // AI workflow must never break grievance creation flow.
-            log.error("AI processing failed for grievanceId={}", grievanceId, e);
+            log.error(IcrsLog.event("ai.workflow.failed", "grievanceId", grievanceId, "reason", e.getClass().getSimpleName()), e);
             return grievance;
         }
     }
 
     private AiDecision decide(Grievance grievance, Sentiment sentiment) throws Exception {
+        log.info(IcrsLog.event("ai.decision.requested", "grievanceId", grievance.getId(), "sentiment", sentiment));
         String prompt = """
                 You are an AI grievance triage and resolution assistant for a college.
                 Return ONLY valid JSON. Do not include markdown fences.
@@ -156,6 +173,7 @@ public class AgenticAiService {
         );
 
         String raw = chatModel.chat(prompt);
+        log.debug(IcrsLog.event("ai.decision.raw-response.received", "grievanceId", grievance.getId()));
         return parseJson(raw, AiDecision.class);
     }
 
