@@ -11,6 +11,7 @@ import com.college.icrs.model.Status;
 import com.college.icrs.model.StatusHistory;
 import com.college.icrs.model.User;
 import com.college.icrs.model.Comment;
+import com.college.icrs.rag.EmbeddingService;
 import com.college.icrs.repository.GrievanceRepository;
 import com.college.icrs.repository.StatusHistoryRepository;
 import com.college.icrs.repository.UserRepository;
@@ -40,6 +41,7 @@ public class GrievanceService {
     private final CommentRepository commentRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final EmbeddingService embeddingService;
 
     public Grievance createGrievance(Grievance grievance, Long studentId) {
         log.info(IcrsLog.event("grievance.create.start", "studentId", studentId, "title", grievance.getTitle()));
@@ -60,6 +62,7 @@ public class GrievanceService {
         }
 
         Grievance saved = grievanceRepository.save(grievance);
+        embeddingService.indexGrievance(saved);
         log.info(IcrsLog.event("grievance.create.completed",
                 "grievanceId", saved.getId(),
                 "status", saved.getStatus(),
@@ -90,6 +93,7 @@ public class GrievanceService {
         }
 
         Grievance saved = grievanceRepository.save(grievance);
+        embeddingService.indexGrievance(saved);
         appendStatusHistory(saved, fromStatus, targetStatus, null);
         if (fromStatus != targetStatus) {
             trySendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, targetStatus);
@@ -99,6 +103,7 @@ public class GrievanceService {
 
     public void deleteGrievance(Long id) {
         Grievance grievance = getGrievanceById(id);
+        embeddingService.removeGrievance(grievance.getId());
         grievanceRepository.delete(grievance);
     }
 
