@@ -39,7 +39,15 @@ public class IcrsProperties {
         private int maxCompletionTokens = 400;
         private String systemUserEmail = "ai.system@icrs.local";
         private String decisionSource = "DEEPSEEK_AGENTIC_V1";
+        private final Rag rag = new Rag();
         private final Sentiment sentiment = new Sentiment();
+
+        @Setter
+        @Getter
+        public static class Rag {
+            private boolean enabled = true;
+            private int topK = 3;
+        }
     }
 
     @Setter

@@ -7,6 +7,8 @@ import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Priority;
 import com.college.icrs.model.Sentiment;
 import com.college.icrs.model.Status;
+import com.college.icrs.rag.RagService;
+import com.college.icrs.rag.RagService.GrievanceContext;
 import com.college.icrs.service.GrievanceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.model.chat.ChatModel;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -33,6 +36,7 @@ public class AgenticAiService {
     private final GrievanceService grievanceService;
     private final ObjectMapper objectMapper;
     private final IcrsProperties icrsProperties;
+    private final RagService ragService;
 
     @Value("${ai.modelname:deepseek-chat}")
     private String modelName;
@@ -56,45 +60,44 @@ public class AgenticAiService {
             SentimentAnalysisService.SentimentDecision sentimentDecision =
                     sentimentAnalysisService.analyze(grievance.getDescription());
             Sentiment sentiment = sentimentDecision.sentiment();
-            log.info(IcrsLog.event("ai.workflow.sentiment.completed",
-                    "grievanceId", grievanceId,
-                    "sentiment", sentiment,
-                    "confidence", sentimentDecision.confidence(),
-                    "model", sentimentDecision.modelName()));
-            AiDecision decision = decide(grievance, sentiment);
 
-            Priority priority = parsePriority(decision.getPriority());
-            Double decisionConfidence = clampConfidence(decision.getConfidence());
-            Double sentimentConfidence = clampConfidence(sentimentDecision.confidence());
-            Double metadataConfidence = clampConfidence(combineConfidence(decisionConfidence, sentimentConfidence));
-            String aiTitle = normalizeTitle(decision.getAiTitle(), grievance.getTitle());
+            List<GrievanceContext> contexts = ragService.retrieveSimilar(grievance);
+            String contextSection = ragService.buildContextSection(contexts);
+
+            ClassificationDecision classification = classify(grievance, sentiment, contextSection);
+            Priority priority = parsePriority(classification.getPriority());
+            Double classificationConfidence = clampConfidence(classification.getConfidence());
+            String classificationTitle = normalizeTitle(classification.getAiTitle(), grievance.getTitle());
 
             grievanceService.applyAiDecisionMetadata(
                     grievanceId,
                     priority,
                     sentiment,
-                    aiTitle,
-                    metadataConfidence,
+                    classificationTitle,
+                    classificationConfidence,
                     mergeModelNames(modelName, sentimentDecision.modelName()),
                     decisionSource(),
                     LocalDateTime.now()
             );
 
-            Double finalConfidence = metadataConfidence;
-            boolean autoResolve = shouldAutoResolve(grievance, decision, finalConfidence);
+            ResolutionDecision resolution = resolve(grievance, sentiment, contextSection, classificationTitle);
+            Double resolutionConfidence = clampConfidence(resolution.getConfidence());
+
+            Double metadataConfidence = clampConfidence(combineConfidence(classificationConfidence, resolutionConfidence));
+            boolean autoResolve = shouldAutoResolve(grievance, resolution, metadataConfidence);
             log.info(IcrsLog.event("ai.workflow.decision.completed",
                     "grievanceId", grievanceId,
                     "priority", priority,
                     "autoResolve", autoResolve,
-                    "confidence", finalConfidence));
+                    "confidence", metadataConfidence));
 
             if (autoResolve) {
                 String resolutionText = normalizeText(
-                        decision.getResolutionText(),
+                        resolution.getResolutionText(),
                         "Your grievance has been processed and marked resolved by the automated assistant."
                 );
                 String internalComment = normalizeText(
-                        decision.getInternalComment(),
+                        resolution.getInternalComment(),
                         "Auto-resolved after AI confidence and policy checks."
                 );
 
@@ -102,7 +105,7 @@ public class AgenticAiService {
                         grievanceId,
                         resolutionText,
                         internalComment,
-                        finalConfidence,
+                        metadataConfidence,
                         mergeModelNames(modelName, sentimentDecision.modelName()),
                         decisionSource()
                 );
@@ -116,12 +119,12 @@ public class AgenticAiService {
                 return updated;
             }
 
-            String manualReviewComment = buildManualReviewComment(decision);
+            String manualReviewComment = buildManualReviewComment(resolution);
             Grievance updated = grievanceService.updateAiRecommendation(
                     grievanceId,
-                    normalizeNullable(decision.getResolutionText()),
+                    normalizeNullable(resolution.getResolutionText()),
                     manualReviewComment,
-                    finalConfidence,
+                    metadataConfidence,
                     mergeModelNames(modelName, sentimentDecision.modelName()),
                     decisionSource(),
                     LocalDateTime.now()
@@ -130,33 +133,28 @@ public class AgenticAiService {
             return updated;
 
         } catch (Exception e) {
-            // AI workflow must never break grievance creation flow.
             log.error(IcrsLog.event("ai.workflow.failed", "grievanceId", grievanceId, "reason", e.getClass().getSimpleName()), e);
             return grievance;
         }
     }
 
-    private AiDecision decide(Grievance grievance, Sentiment sentiment) throws Exception {
-        log.info(IcrsLog.event("ai.decision.requested", "grievanceId", grievance.getId(), "sentiment", sentiment));
+    private ClassificationDecision classify(Grievance grievance, Sentiment sentiment, String context) throws Exception {
+        log.info(IcrsLog.event("ai.classification.requested", "grievanceId", grievance.getId()));
         String prompt = """
-                You are an AI grievance triage and resolution assistant for a college.
-                Return ONLY valid JSON. Do not include markdown fences.
+                You are an AI grievance triage classifier for a college.
+                Return ONLY valid JSON.
 
                 JSON schema:
                 {
                   "priority": "LOW|MEDIUM|HIGH",
                   "aiTitle": "short summary title (max 120 chars)",
-                  "autoResolve": true,
-                  "resolutionText": "student-facing resolution text if autoResolve=true, else empty",
-                  "internalComment": "brief internal note explaining auto-resolution or routing",
                   "confidence": 0.0
                 }
 
                 Rules:
-                - If unsure, set autoResolve to false.
-                - Keep resolutionText concise and actionable.
-                - Never claim actions you cannot verify.
-                - Use the grievance details and sentiment to infer priority.
+                - Base your priority on the grievance details, category, and sentiment.
+                - Provide confidence between 0 and 1.
+                - Keep titles concise and factual.
 
                 Context:
                 - title: %s
@@ -164,20 +162,64 @@ public class AgenticAiService {
                 - category: %s
                 - subcategory: %s
                 - sentiment: %s
+                %s
                 """.formatted(
                 safe(grievance.getTitle()),
                 safe(truncate(grievance.getDescription(), icrsProperties.getAi().getMaxDescriptionChars())),
                 grievance.getCategory() != null ? safe(grievance.getCategory().getName()) : "UNKNOWN",
                 grievance.getSubcategory() != null ? safe(grievance.getSubcategory().getName()) : "UNKNOWN",
-                sentiment != null ? sentiment.name() : "UNKNOWN"
+                sentiment != null ? sentiment.name() : "UNKNOWN",
+                StringUtils.hasText(context) ? "Retrieved cases:\n" + context : ""
         );
 
         String raw = chatModel.chat(prompt);
-        log.debug(IcrsLog.event("ai.decision.raw-response.received", "grievanceId", grievance.getId()));
-        return parseJson(raw, AiDecision.class);
+        log.debug(IcrsLog.event("ai.classification.raw-response.received", "grievanceId", grievance.getId()));
+        return parseJson(raw, ClassificationDecision.class);
     }
 
-    private boolean shouldAutoResolve(Grievance grievance, AiDecision decision, Double confidence) {
+    private ResolutionDecision resolve(Grievance grievance, Sentiment sentiment, String context, String classificationTitle) throws Exception {
+        log.info(IcrsLog.event("ai.resolution.requested", "grievanceId", grievance.getId()));
+        String prompt = """
+                You are an AI resolution assistant for a college grievance system.
+                Return ONLY valid JSON.
+
+                JSON schema:
+                {
+                  "autoResolve": true,
+                  "resolutionText": "student facing resolution text",
+                  "internalComment": "internal reasoning for operators",
+                  "confidence": 0.0
+                }
+
+                Rules:
+                - Provide autoResolve=false if you are unsure or the category is sensitive.
+                - Keep resolutionText concise, factual, and actionable.
+                - Never claim to take actions you cannot verify.
+
+                Context:
+                - title: %s
+                - description: %s
+                - category: %s
+                - subcategory: %s
+                - sentiment: %s
+                - classificationTitle: %s
+                %s
+                """.formatted(
+                safe(grievance.getTitle()),
+                safe(truncate(grievance.getDescription(), icrsProperties.getAi().getMaxDescriptionChars())),
+                grievance.getCategory() != null ? safe(grievance.getCategory().getName()) : "UNKNOWN",
+                grievance.getSubcategory() != null ? safe(grievance.getSubcategory().getName()) : "UNKNOWN",
+                sentiment != null ? sentiment.name() : "UNKNOWN",
+                classificationTitle,
+                StringUtils.hasText(context) ? "Retrieved cases:\n" + context : ""
+        );
+
+        String raw = chatModel.chat(prompt);
+        log.debug(IcrsLog.event("ai.resolution.raw-response.received", "grievanceId", grievance.getId()));
+        return parseJson(raw, ResolutionDecision.class);
+    }
+
+    private boolean shouldAutoResolve(Grievance grievance, ResolutionDecision decision, Double confidence) {
         if (decision == null || !Boolean.TRUE.equals(decision.getAutoResolve())) return false;
         if (grievance.getStatus() == Status.RESOLVED) return false;
         if (isSensitiveCategory(grievance)) return false;
@@ -192,13 +234,12 @@ public class AgenticAiService {
             return category != null
                     && (Boolean.TRUE.equals(category.getSensitive()) || Boolean.TRUE.equals(category.getHideIdentity()));
         } catch (Exception e) {
-            // Fail safe: if category information cannot be read, avoid auto resolution.
             log.warn("Could not determine sensitivity for grievanceId={}", grievance.getId(), e);
             return true;
         }
     }
 
-    private String buildManualReviewComment(AiDecision decision) {
+    private String buildManualReviewComment(ResolutionDecision decision) {
         return normalizeText(
                 decision != null ? decision.getInternalComment() : null,
                 "Routed for human review due to policy or confidence."
@@ -295,9 +336,15 @@ public class AgenticAiService {
 
     @Getter
     @Setter
-    public static class AiDecision {
+    private static class ClassificationDecision {
         private String priority;
         private String aiTitle;
+        private Double confidence;
+    }
+
+    @Getter
+    @Setter
+    private static class ResolutionDecision {
         private Boolean autoResolve;
         private String resolutionText;
         private String internalComment;

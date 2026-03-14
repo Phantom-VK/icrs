@@ -27,10 +27,11 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.flywaydb:flyway-core")
-    implementation("org.projectlombok:lombok:1.18.40")
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok:1.18.40")
-	implementation("org.springframework.ai:spring-ai-starter-model-postgresml-embedding")
+	implementation("org.projectlombok:lombok:1.18.40")
+	compileOnly("org.projectlombok:lombok")
+	annotationProcessor("org.projectlombok:lombok:1.18.40")
+	implementation("org.springframework.ai:spring-ai-starter-model-transformers")
+	implementation("org.springframework.ai:spring-ai-starter-vector-store-pgvector")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	runtimeOnly("org.postgresql:postgresql:42.7.9")
 	runtimeOnly("org.flywaydb:flyway-database-postgresql")
@@ -53,4 +54,22 @@ dependencyManagement {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+tasks.register<JavaExec>("importGrievanceVectors") {
+	group = "application"
+	description = "Imports grievance documents from a JSON file into the pgvector store"
+	classpath = sourceSets["main"].runtimeClasspath
+	mainClass.set("com.college.icrs.tools.GrievanceVectorImportMain")
+	javaLauncher.set(javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(25)
+	})
+	dependsOn(tasks.named("classes"))
+
+	project.findProperty("grievanceImportFile")?.toString()?.takeIf { it.isNotBlank() }?.let {
+		systemProperty("grievanceImportFile", it)
+	}
+	project.findProperty("grievanceImportReplaceExisting")?.toString()?.takeIf { it.isNotBlank() }?.let {
+		systemProperty("grievanceImportReplaceExisting", it)
+	}
 }

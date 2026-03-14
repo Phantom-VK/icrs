@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1001,
+    "title": "Hostel water issue",
+    "description": "Water is unavailable in hostel from last night",
+    "category": "Hostel & Accommodation",
+    "subcategory": "Water Supply",
+    "registrationNumber": "2022BIT052",
+    "priority": "HIGH",
+    "sentiment": "NEGATIVE",
+    "resolutionText": "Plumbing team was dispatched."
+  },
+  {
+    "documentId": "manual-security-1",
+    "title": "Library theft complaint",
+    "description": "A laptop bag was stolen from the reading room.",
+    "category": "Discipline & Safety",
+    "subcategory": "Security",
+    "priority": "HIGH",
+    "sentiment": "VERY_NEGATIVE"
+  }
+]
