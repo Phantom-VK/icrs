@@ -49,3 +49,4 @@ documents/*.pdf
 
 # Application logs
 logs/*.log
+/documents/AI_Layer_Technical_Workflow.md
