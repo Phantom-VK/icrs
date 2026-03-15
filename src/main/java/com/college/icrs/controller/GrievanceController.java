@@ -5,15 +5,10 @@ import com.college.icrs.dto.GrievanceRequestDTO;
 import com.college.icrs.dto.GrievanceResponseDTO;
 import com.college.icrs.dto.CommentRequestDTO;
 import com.college.icrs.dto.CommentResponseDTO;
-import com.college.icrs.exception.ResourceNotFoundException;
 import com.college.icrs.logging.IcrsLog;
 import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Status;
 import com.college.icrs.model.User;
-import com.college.icrs.model.Category;
-import com.college.icrs.model.Subcategory;
-import com.college.icrs.repository.UserRepository;
-import com.college.icrs.service.CategoryCatalogService;
 import com.college.icrs.service.GrievanceService;
 import com.college.icrs.utils.GrievanceMapper;
 import jakarta.validation.Valid;
@@ -26,7 +21,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/grievances")
@@ -37,8 +31,8 @@ public class GrievanceController {
 
     private final GrievanceService grievanceService;
     private final GrievanceMapper grievanceMapper;
-    private final UserRepository userRepository;
-    private final CategoryCatalogService categoryCatalogService;
+    private final CurrentUserResolver currentUserResolver;
+    private final GrievanceRequestAssembler grievanceRequestAssembler;
     private final AgenticAiService agenticAiService;
 
     /** Create a new grievance (Student submission) */
@@ -48,21 +42,13 @@ public class GrievanceController {
             @Valid @RequestBody GrievanceRequestDTO grievanceDTO,
             Authentication authentication) {
 
-        if (authentication == null || authentication.getName() == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(null);
-        }
-
-        String email = authentication.getName();
+        User user = currentUserResolver.requireAuthenticatedUser(authentication);
+        String email = user.getEmail();
         log.info(IcrsLog.event("grievance.submit.request",
                 "studentEmail", email,
                 "categoryId", grievanceDTO.getCategoryId(),
                 "subcategoryId", grievanceDTO.getSubcategoryId()));
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found for email: " + email));
-
-        Grievance grievance = grievanceMapper.toEntity(grievanceDTO);
-        applyCategorySelections(grievanceDTO, grievance);
+        Grievance grievance = grievanceRequestAssembler.toEntity(grievanceDTO);
         Grievance createdGrievance = grievanceService.createGrievance(grievance, user.getId());
         agenticAiService.processNewGrievanceAsync(createdGrievance.getId());
         log.info(IcrsLog.event("grievance.submit.persisted",
@@ -106,8 +92,7 @@ public class GrievanceController {
             @PathVariable Long id,
             @Valid @RequestBody GrievanceRequestDTO grievanceDTO) {
 
-        Grievance grievance = grievanceMapper.toEntity(grievanceDTO);
-        applyCategorySelections(grievanceDTO, grievance);
+        Grievance grievance = grievanceRequestAssembler.toEntity(grievanceDTO);
         Grievance updated = grievanceService.updateGrievance(id, grievance);
         return ResponseEntity.ok(grievanceMapper.toDTO(updated));
     }
@@ -125,30 +110,16 @@ public class GrievanceController {
     @PreAuthorize("hasAnyRole('FACULTY','ADMIN')")
     public ResponseEntity<List<GrievanceResponseDTO>> getGrievancesByStudent(@PathVariable Long studentId) {
         List<Grievance> grievances = grievanceService.getGrievancesByStudent(studentId);
-        List<GrievanceResponseDTO> dtoList = grievances.stream()
-                .map(g -> grievanceMapper.toDTO(g, true))
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(dtoList);
+        return ResponseEntity.ok(toMaskedDtoList(grievances));
     }
 
     /** Get grievances for the logged-in student (via JWT) */
     @GetMapping("/student/me")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<GrievanceResponseDTO>> getMyGrievances(Authentication authentication) {
-        if (authentication == null || authentication.getName() == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found for email: " + email));
-
+        User user = currentUserResolver.requireAuthenticatedUser(authentication);
         List<Grievance> grievances = grievanceService.getGrievancesByStudent(user.getId());
-        List<GrievanceResponseDTO> dtoList = grievances.stream()
-                .map(grievanceMapper::toDTO)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(dtoList);
+        return ResponseEntity.ok(grievanceMapper.toDTOList(grievances));
     }
 
     /** Get grievances filtered by status (Faculty/Admin) */
@@ -202,7 +173,7 @@ public class GrievanceController {
             @Valid @RequestBody CommentRequestDTO requestDTO,
             Authentication authentication) {
 
-        String email = authentication.getName();
+        String email = currentUserResolver.requireAuthenticatedEmail(authentication);
         log.info(IcrsLog.event("grievance.comment.create.request", "grievanceId", id, "authorEmail", email));
         CommentResponseDTO dto = grievanceService.addComment(id, email, requestDTO.getBody());
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
@@ -215,33 +186,14 @@ public class GrievanceController {
             @PathVariable Long id,
             Authentication authentication) {
 
-        String email = authentication.getName();
+        String email = currentUserResolver.requireAuthenticatedEmail(authentication);
         List<CommentResponseDTO> comments = grievanceService.getComments(id, email);
         return ResponseEntity.ok(comments);
     }
 
-    private void applyCategorySelections(GrievanceRequestDTO grievanceDTO, Grievance grievance) {
-        if (grievanceDTO.getCategoryId() != null || grievanceDTO.getCategory() != null) {
-            Category category = categoryCatalogService.resolveCategory(
-                    grievanceDTO.getCategoryId(),
-                    grievanceDTO.getCategory()
-            );
-            grievance.setCategory(category);
-            log.debug(IcrsLog.event("grievance.category.resolved",
-                    "categoryId", category.getId(),
-                    "categoryName", category.getName()));
-        }
-
-        if ((grievanceDTO.getSubcategoryId() != null || grievanceDTO.getSubcategory() != null) && grievance.getCategory() != null) {
-            Subcategory subcategory = categoryCatalogService.resolveSubcategory(
-                    grievance.getCategory(),
-                    grievanceDTO.getSubcategoryId(),
-                    grievanceDTO.getSubcategory()
-            );
-            grievance.setSubcategory(subcategory);
-            log.debug(IcrsLog.event("grievance.subcategory.resolved",
-                    "subcategoryId", subcategory.getId(),
-                    "subcategoryName", subcategory.getName()));
-        }
+    private List<GrievanceResponseDTO> toMaskedDtoList(List<Grievance> grievances) {
+        return grievances.stream()
+                .map(grievance -> grievanceMapper.toDTO(grievance, true))
+                .toList();
     }
 }

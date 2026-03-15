@@ -59,15 +59,15 @@ public class GrievanceAgentState extends AgentState {
         return value(RAG_CONTEXT_SECTION).map(String.class::cast).orElse("");
     }
 
-    public GrievanceAgentTools.NextTool nextTool() {
+    public NextTool nextTool() {
         String value = value(NEXT_TOOL).map(String.class::cast).orElse(null);
         if (!StringUtils.hasText(value)) {
-            return GrievanceAgentTools.NextTool.CLASSIFY;
+            return NextTool.CLASSIFY;
         }
         try {
-            return GrievanceAgentTools.NextTool.valueOf(value);
+            return NextTool.valueOf(value);
         } catch (IllegalArgumentException ex) {
-            return GrievanceAgentTools.NextTool.CLASSIFY;
+            return NextTool.CLASSIFY;
         }
     }
 
