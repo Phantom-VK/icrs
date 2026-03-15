@@ -119,7 +119,7 @@ public class GrievanceWorkflowGraph {
         Long grievanceId = state.grievanceId();
         int nextIteration = state.plannerIteration() + 1;
         log.info(IcrsLog.event("ai.graph.node.start", "node", PLAN_CONTEXT_TOOLS, "grievanceId", grievanceId));
-        GrievanceAgentTools.ContextToolSelection selection = tools.selectContextTools(
+        ContextToolSelection selection = tools.selectContextTools(
                 tools.loadGrievance(grievanceId),
                 state.sentiment(),
                 state.ragContextSection(),
@@ -131,7 +131,7 @@ public class GrievanceWorkflowGraph {
                 state.statusHistoryContextFetched(),
                 nextIteration
         );
-        String nextTool = selection.getNextTool() != null ? selection.getNextTool().name() : GrievanceAgentTools.NextTool.CLASSIFY.name();
+        String nextTool = selection.getNextTool() != null ? selection.getNextTool().name() : NextTool.CLASSIFY.name();
         String plannerTrace = appendTrace(state.plannerTrace(), nextIteration + ":" + nextTool + "(" + compact(selection.getReason()) + ")");
         log.info(IcrsLog.event("ai.context-planner.decision",
                 "grievanceId", grievanceId,
@@ -219,7 +219,7 @@ public class GrievanceWorkflowGraph {
                 "routeTrace", appendTrace(state.routeTrace(), "CLASSIFY"),
                 "plannerTrace", state.plannerTrace()));
         try {
-            GrievanceAgentTools.ClassificationDecision decision = tools.classify(
+            ClassificationDecision decision = tools.classify(
                     tools.loadGrievance(grievanceId),
                     state.sentiment(),
                     state.ragContextSection(),
@@ -261,7 +261,7 @@ public class GrievanceWorkflowGraph {
         Long grievanceId = state.grievanceId();
         log.info(IcrsLog.event("ai.graph.node.start", "node", RESOLVE_GRIEVANCE, "grievanceId", grievanceId));
         try {
-            GrievanceAgentTools.ResolutionDecision decision = tools.resolve(
+            ResolutionDecision decision = tools.resolve(
                     tools.loadGrievance(grievanceId),
                     state.sentiment(),
                     state.ragContextSection(),
@@ -325,8 +325,8 @@ public class GrievanceWorkflowGraph {
             return ROUTE_CLASSIFY;
         }
 
-        GrievanceAgentTools.NextTool nextTool = state.nextTool();
-        if (nextTool == GrievanceAgentTools.NextTool.POLICY && !state.policyContextFetched()) {
+        NextTool nextTool = state.nextTool();
+        if (nextTool == NextTool.POLICY && !state.policyContextFetched()) {
             log.info(IcrsLog.event("ai.context-router.decision",
                     "grievanceId", state.grievanceId(),
                     "iteration", state.plannerIteration(),
@@ -334,7 +334,7 @@ public class GrievanceWorkflowGraph {
                     "reason", compact(state.nextToolReason())));
             return ROUTE_POLICY;
         }
-        if (nextTool == GrievanceAgentTools.NextTool.COMMENT && !state.commentContextFetched()) {
+        if (nextTool == NextTool.COMMENT && !state.commentContextFetched()) {
             log.info(IcrsLog.event("ai.context-router.decision",
                     "grievanceId", state.grievanceId(),
                     "iteration", state.plannerIteration(),
@@ -342,7 +342,7 @@ public class GrievanceWorkflowGraph {
                     "reason", compact(state.nextToolReason())));
             return ROUTE_COMMENT;
         }
-        if (nextTool == GrievanceAgentTools.NextTool.STATUS_HISTORY && !state.statusHistoryContextFetched()) {
+        if (nextTool == NextTool.STATUS_HISTORY && !state.statusHistoryContextFetched()) {
             log.info(IcrsLog.event("ai.context-router.decision",
                     "grievanceId", state.grievanceId(),
                     "iteration", state.plannerIteration(),
