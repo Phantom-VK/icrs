@@ -1,0 +1,44 @@
+flowchart TD
+    A["Frontend Entry\nfrontend/src/main.tsx\ncreateRoot()\nrenders App"] --> B["Frontend Router\nfrontend/src/App.tsx\nApp()\nRoutes + ProtectedRoute"]
+
+    B --> C["Auth UI\nfrontend/src/components/auth/*\nLoginPage / CreateAccount / VerifyAccount"]
+    B --> D["Student UI\nfrontend/src/components/student/*\nStudentDashboard / SubmitGrievance / TrackGrievance"]
+    B --> E["Faculty UI\nfrontend/src/components/faculty/FacultyDashboard.tsx\nFacultyDashboard()"]
+
+    C --> F["Frontend Auth Service\nfrontend/src/services/authService.ts\nregister() / login() / verify() / resend() / getCurrentUser()"]
+    D --> G["Frontend Grievance Service\nfrontend/src/services/grievanceService.ts\nsubmit() / getMyGrievances() / getById() / getAll() / updateStatus() / getComments() / addComment() / getCategories()"]
+    E --> G
+
+    F --> H["Axios API Client\nfrontend/src/services/apiClient.ts\naxios.create()\nrequest interceptor\nresponse interceptor"]
+    G --> H
+
+    H --> I["Spring Boot App\nsrc/main/java/com/college/icrs/IcrsApplication.java\nmain()"]
+
+    I --> J["Security Layer\nsrc/main/java/com/college/icrs/config/SecurityConfig.java\nsecurityFilterChain()\n\nsrc/main/java/com/college/icrs/config/JWTAuthenticationFilter.java\ndoFilterInternal()"]
+
+    J --> K["Auth API\nsrc/main/java/com/college/icrs/controller/AuthenticationController.java\nsignup() / login() / verifyUser() / resendVerificationCode()"]
+    J --> L["Grievance API\nsrc/main/java/com/college/icrs/controller/GrievanceController.java\ncreateGrievance() / getMyGrievances() / getAllGrievances() / updateStatus() / addComment() / getComments()"]
+    J --> M["Category API\nsrc/main/java/com/college/icrs/controller/CategoryController.java"]
+    J --> N["User API\nsrc/main/java/com/college/icrs/controller/UserController.java"]
+
+    K --> O["Authentication Service\nsrc/main/java/com/college/icrs/service/AuthenticationService.java\nsignup() / login() / verifyUser() / resendVerificationCode()"]
+    O --> P["JWT Service\nsrc/main/java/com/college/icrs/service/JwtService.java\ngenerateToken() / extractUsername() / isTokenValid()"]
+    O --> Q["Email Service\nsrc/main/java/com/college/icrs/service/EmailService.java\nsendVerificationEmail() / sendAsync()"]
+
+    L --> R["Grievance Service\nsrc/main/java/com/college/icrs/service/GrievanceService.java\ncreateGrievance() / updateGrievance() / updateGrievanceStatus() / applyAiDecisionMetadata() / updateAiRecommendation() / markResolvedByAi() / addComment()"]
+    R --> S["Embedding Service\nsrc/main/java/com/college/icrs/rag/EmbeddingService.java\nindexGrievance() / removeGrievance() / buildEmbeddingText()"]
+    L --> T["Agentic AI Entry\nsrc/main/java/com/college/icrs/ai/service/AgenticAiService.java\nprocessNewGrievanceAsync() / processNewGrievance()"]
+
+    T --> U["LangGraph Workflow\nsrc/main/java/com/college/icrs/ai/agent/GrievanceWorkflowGraph.java\nprocess() / compileGraph()"]
+    U --> V["AI Tools Layer\nsrc/main/java/com/college/icrs/ai/agent/GrievanceAgentTools.java\nselectContextTools() / classify() / resolve() / finalizeDecision() / buildPolicyContext() / buildCommentContext() / buildStatusHistoryContext()"]
+    V --> W["RAG Service\nsrc/main/java/com/college/icrs/rag/RagService.java\nretrieveSimilar() / buildContextSection()"]
+    V --> X["Sentiment Service Client\nsrc/main/java/com/college/icrs/ai/service/SentimentAnalysisService.java\nanalyze()"]
+
+    X --> Y["Python Sentiment Microservice\nml/sentiment_service/app.py\nhealth() / analyze()"]
+
+    S --> Z["Vector Document Builder\nsrc/main/java/com/college/icrs/rag/GrievanceVectorDocumentFactory.java\nfromGrievance() / buildContent()"]
+    W --> AA["pgvector / Vector Store\nPostgreSQL + vector_store\nSpring AI VectorStore"]
+    R --> AB["Relational Persistence\nPostgreSQL tables:\nusers / grievances / comments / status_history / categories / subcategories / attachments"]
+    O --> AB
+    W --> AB
+    Q --> AC["SMTP / Mail Infrastructure"]
