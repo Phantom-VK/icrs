@@ -19,6 +19,7 @@ repositories {
 }
 
 extra["springAiVersion"] = "1.1.0"
+extra["langGraph4jVersion"] = "1.7.5"
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -44,6 +45,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
     implementation("dev.langchain4j:langchain4j-open-ai:1.10.0")
+    implementation("org.bsc.langgraph4j:langgraph4j-core:${property("langGraph4jVersion")}")
 }
 
 dependencyManagement {
