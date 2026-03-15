@@ -29,7 +29,7 @@ public final class SentimentServiceLauncher {
     private static final boolean DEFAULT_SENTIMENT_ENABLED = true;
     private static final boolean DEFAULT_SENTIMENT_AUTO_START = true;
     private static final String DEFAULT_SENTIMENT_BASE_URL = "http://localhost:8090";
-    private static final String DEFAULT_SENTIMENT_WORKING_DIR = "ml/sentiment_service";
+    private static final String DEFAULT_SENTIMENT_WORKING_DIR = "src/main/python/sentiment_service";
     private static final int DEFAULT_SENTIMENT_STARTUP_WAIT_MS = 15000;
 
     private SentimentServiceLauncher() {

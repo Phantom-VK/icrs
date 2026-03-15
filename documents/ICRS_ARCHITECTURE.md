@@ -105,7 +105,7 @@ src/main/java/com/college/icrs/ai/service/SentimentAnalysisService.java
 analyze()"]
 
     X --> Y["Python Sentiment Microservice
-ml/sentiment_service/app.py
+src/main/python/sentiment_service/app.py
 health() / analyze()"]
 
     S --> Z["Vector Document Builder
@@ -143,7 +143,7 @@ src/main/java/com/college/icrs/config/CollegeSeedDataInitializer.java"]
 src/main/java/com/college/icrs/logging/LogFolderInitializer.java"]
 
     B --> G["Python Service Process
-ml/sentiment_service/app.py
+src/main/python/sentiment_service/app.py
 /health /analyze"]
     C --> H["Database / Flyway
 src/main/resources/db/migration/*
@@ -407,7 +407,7 @@ SentimentServiceLauncher.isSentimentServiceHealthy()"]
     C --> D["Start uvicorn process if needed
 SentimentServiceLauncher.buildStartCommand()"]
     D --> E["Python FastAPI service
-ml/sentiment_service/app.py
+src/main/python/sentiment_service/app.py
 health() / analyze()"]
 
     F["AI graph sentiment node

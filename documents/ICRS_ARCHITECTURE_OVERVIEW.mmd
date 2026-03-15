@@ -34,7 +34,7 @@ flowchart TD
     V --> W["RAG Service\nsrc/main/java/com/college/icrs/rag/RagService.java\nretrieveSimilar() / buildContextSection()"]
     V --> X["Sentiment Service Client\nsrc/main/java/com/college/icrs/ai/service/SentimentAnalysisService.java\nanalyze()"]
 
-    X --> Y["Python Sentiment Microservice\nml/sentiment_service/app.py\nhealth() / analyze()"]
+    X --> Y["Python Sentiment Microservice\nsrc/main/python/sentiment_service/app.py\nhealth() / analyze()"]
 
     S --> Z["Vector Document Builder\nsrc/main/java/com/college/icrs/rag/GrievanceVectorDocumentFactory.java\nfromGrievance() / buildContent()"]
     W --> AA["pgvector / Vector Store\nPostgreSQL + vector_store\nSpring AI VectorStore"]

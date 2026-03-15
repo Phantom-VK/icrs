@@ -60,7 +60,7 @@ public class IcrsProperties {
         private double veryNegativeThreshold = 0.85d;
         private double neutralBandUpper = 0.60d;
         private String modelName = "siebert/sentiment-roberta-large-english";
-        private String workingDir = "ml/sentiment_service";
+        private String workingDir = "src/main/python/sentiment_service";
         private int startupWaitMs = 15000;
     }
 }

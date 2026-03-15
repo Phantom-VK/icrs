@@ -5,7 +5,7 @@ Local ML sentiment inference service for ICRS.
 ## Setup
 
 ```bash
-cd ml/sentiment_service
+cd src/main/python/sentiment_service
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -17,7 +17,7 @@ On first run, the model is downloaded and cached automatically.
 If you previously created the virtual environment with a failed `torch` install, recreate it before retrying:
 
 ```bash
-cd ml/sentiment_service
+cd src/main/python/sentiment_service
 rm -rf .venv
 python3 -m venv .venv
 source .venv/bin/activate
