@@ -33,7 +33,7 @@ public class CategoryCatalogDefinitions {
                     new CatalogSubcategoryDefinition(502L, "Scholarship", "Disbursement delays, eligibility", "finance@college.edu"),
                     new CatalogSubcategoryDefinition(503L, "Refunds", "Refund status and timelines", "finance@college.edu")
             )),
-            new CatalogCategoryDefinition(6L, "Discipline & Safety", "Code of conduct, harassment, security", false, false, "discipline@college.edu", List.of(
+            new CatalogCategoryDefinition(6L, "Discipline & Safety", "Code of conduct, harassment, security", true, false, "discipline@college.edu", List.of(
                     new CatalogSubcategoryDefinition(601L, "Code of Conduct", "Ragging, harassment, misconduct", "discipline@college.edu"),
                     new CatalogSubcategoryDefinition(602L, "Security", "Campus security or safety concerns", "discipline@college.edu")
             )),

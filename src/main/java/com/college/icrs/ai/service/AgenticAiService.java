@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 @lombok.RequiredArgsConstructor
 public class AgenticAiService {
 
-    private final GrievanceService grievanceService;
     private final IcrsProperties icrsProperties;
     private final GrievanceWorkflowGraph grievanceWorkflowGraph;
 
@@ -27,19 +26,17 @@ public class AgenticAiService {
         processNewGrievance(grievanceId);
     }
 
-    public Grievance processNewGrievance(Long grievanceId) {
+    public void processNewGrievance(Long grievanceId) {
         log.info(IcrsLog.event("ai.workflow.start", "grievanceId", grievanceId));
-        Grievance grievance = grievanceService.getGrievanceById(grievanceId);
         if (!icrsProperties.getAi().isEnabled()) {
             log.info(IcrsLog.event("ai.workflow.skipped", "grievanceId", grievanceId, "reason", "ai-disabled"));
-            return grievance;
+            return;
         }
 
         try {
-            return grievanceWorkflowGraph.process(grievanceId);
+            grievanceWorkflowGraph.process(grievanceId);
         } catch (Exception e) {
             log.error(IcrsLog.event("ai.workflow.failed", "grievanceId", grievanceId, "reason", e.getClass().getSimpleName()), e);
-            return grievance;
         }
     }
 }
