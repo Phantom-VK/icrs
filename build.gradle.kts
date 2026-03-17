@@ -44,8 +44,10 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
+    implementation("dev.langchain4j:langchain4j:1.10.0")
     implementation("dev.langchain4j:langchain4j-open-ai:1.10.0")
     implementation("org.bsc.langgraph4j:langgraph4j-core:${property("langGraph4jVersion")}")
+    implementation("org.bsc.langgraph4j:langgraph4j-langchain4j:${property("langGraph4jVersion")}")
 }
 
 dependencyManagement {
