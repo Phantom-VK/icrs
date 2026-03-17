@@ -45,6 +45,10 @@ public class GrievanceAgentTools {
         return contextService.buildStatusHistoryContext(grievanceId);
     }
 
+    public String buildResolutionGuidanceContext(Long grievanceId) {
+        return contextService.buildResolutionGuidanceContext(grievanceId);
+    }
+
     public ContextToolSelection selectContextTools(
             Grievance grievance,
             Sentiment sentiment,
@@ -52,9 +56,11 @@ public class GrievanceAgentTools {
             String policyContext,
             String commentContext,
             String statusHistoryContext,
+            String resolutionGuidanceContext,
             boolean policyFetched,
             boolean commentFetched,
             boolean statusHistoryFetched,
+            boolean resolutionGuidanceFetched,
             int plannerIteration
     ) {
         return decisionService.selectContextTools(
@@ -64,9 +70,11 @@ public class GrievanceAgentTools {
                 policyContext,
                 commentContext,
                 statusHistoryContext,
+                resolutionGuidanceContext,
                 policyFetched,
                 commentFetched,
                 statusHistoryFetched,
+                resolutionGuidanceFetched,
                 plannerIteration
         );
     }
@@ -82,7 +90,7 @@ public class GrievanceAgentTools {
         return decisionService.classify(grievance, sentiment, ragContext, policyContext, commentContext, statusHistoryContext);
     }
 
-    public Grievance applyClassificationMetadata(
+    public void applyClassificationMetadata(
             Long grievanceId,
             Sentiment sentiment,
             String sentimentModelName,
@@ -90,7 +98,7 @@ public class GrievanceAgentTools {
             String aiTitleValue,
             Double confidenceValue
     ) {
-        return actionService.applyClassificationMetadata(
+        actionService.applyClassificationMetadata(
                 grievanceId,
                 sentiment,
                 sentimentModelName,
@@ -106,12 +114,21 @@ public class GrievanceAgentTools {
             String ragContext,
             String policyContext,
             String commentContext,
-            String statusHistoryContext
+            String statusHistoryContext,
+            String resolutionGuidanceContext
     ) throws Exception {
-        return decisionService.resolve(grievance, sentiment, ragContext, policyContext, commentContext, statusHistoryContext);
+        return decisionService.resolve(
+                grievance,
+                sentiment,
+                ragContext,
+                policyContext,
+                commentContext,
+                statusHistoryContext,
+                resolutionGuidanceContext
+        );
     }
 
-    public Grievance finalizeDecision(
+    public void finalizeDecision(
             Long grievanceId,
             String sentimentModelName,
             Double classificationConfidenceValue,
@@ -120,7 +137,7 @@ public class GrievanceAgentTools {
             String resolutionInternalCommentValue,
             Double resolutionConfidenceValue
     ) {
-        return actionService.finalizeDecision(
+        actionService.finalizeDecision(
                 grievanceId,
                 sentimentModelName,
                 classificationConfidenceValue,

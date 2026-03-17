@@ -1,5 +1,6 @@
 package com.college.icrs.ai.agent;
 
+import com.college.icrs.ai.knowledge.ResolutionGuidanceService;
 import com.college.icrs.ai.service.SentimentAnalysisService;
 import com.college.icrs.model.Category;
 import com.college.icrs.model.Comment;
@@ -24,6 +25,7 @@ public class GrievanceAgentContextService {
     private final RagService ragService;
     private final CommentRepository commentRepository;
     private final StatusHistoryRepository statusHistoryRepository;
+    private final ResolutionGuidanceService resolutionGuidanceService;
 
     public Grievance loadGrievance(Long grievanceId) {
         return grievanceService.getGrievanceById(grievanceId);
@@ -86,6 +88,10 @@ public class GrievanceAgentContextService {
                 ))
                 .reduce((left, right) -> left + "\n" + right)
                 .orElse("No prior status transitions.");
+    }
+
+    public String buildResolutionGuidanceContext(Long grievanceId) {
+        return resolutionGuidanceService.buildContext(grievanceService.getGrievanceById(grievanceId));
     }
 
     private String truncate(String value, int maxLength) {

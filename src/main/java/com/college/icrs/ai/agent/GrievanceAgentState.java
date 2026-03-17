@@ -23,6 +23,8 @@ public class GrievanceAgentState extends AgentState {
     public static final String COMMENT_CONTEXT_FETCHED = "commentContextFetched";
     public static final String STATUS_HISTORY_CONTEXT_SECTION = "statusHistoryContextSection";
     public static final String STATUS_HISTORY_CONTEXT_FETCHED = "statusHistoryContextFetched";
+    public static final String RESOLUTION_GUIDANCE_CONTEXT_SECTION = "resolutionGuidanceContextSection";
+    public static final String RESOLUTION_GUIDANCE_CONTEXT_FETCHED = "resolutionGuidanceContextFetched";
     public static final String CLASSIFICATION_PRIORITY = "classificationPriority";
     public static final String CLASSIFICATION_AI_TITLE = "classificationAiTitle";
     public static final String CLASSIFICATION_CONFIDENCE = "classificationConfidence";
@@ -109,6 +111,14 @@ public class GrievanceAgentState extends AgentState {
 
     public boolean statusHistoryContextFetched() {
         return value(STATUS_HISTORY_CONTEXT_FETCHED).map(Boolean.class::cast).orElse(false);
+    }
+
+    public String resolutionGuidanceContextSection() {
+        return value(RESOLUTION_GUIDANCE_CONTEXT_SECTION).map(String.class::cast).orElse("");
+    }
+
+    public boolean resolutionGuidanceContextFetched() {
+        return value(RESOLUTION_GUIDANCE_CONTEXT_FETCHED).map(Boolean.class::cast).orElse(false);
     }
 
     public String classificationPriority() {
