@@ -3,7 +3,11 @@ package com.college.icrs.integration;
 import com.college.icrs.model.Status;
 import com.college.icrs.repository.StatusHistoryRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.response.ChatResponse;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +38,13 @@ class GrievanceApiAiLlmOnlyIT extends GrievanceApiIntegrationTestSupport {
 
     @Test
     void shouldCreateGrievanceWhenLlmFailsWithoutBreakingFlow() throws Exception {
-        Mockito.when(chatModel.chat(Mockito.anyString())).thenReturn("not-json");
+        Mockito.when(chatModel.chat(Mockito.any(ChatRequest.class))).thenAnswer(invocation -> {
+            ChatRequest request = invocation.getArgument(0);
+            if (containsPrompt(request, "context-planning agent")) {
+                return plannerDoneResponse();
+            }
+            throw new IllegalArgumentException("not-json");
+        });
 
         String token = loginAndGetBearerToken();
         long categoryId = getCatalogCategoryIdByName("Finance & Scholarships");
@@ -52,16 +62,32 @@ class GrievanceApiAiLlmOnlyIT extends GrievanceApiIntegrationTestSupport {
 
     @Test
     void shouldAutoResolveAndCreateAiSystemCommentForNonSensitiveGrievance() throws Exception {
-        Mockito.when(chatModel.chat(Mockito.anyString())).thenReturn("""
-                {
-                  "priority":"LOW",
-                  "aiTitle":"WiFi connectivity issue",
-                  "autoResolve":true,
-                  "resolutionText":"Please reset your WiFi profile and reconnect. IT support has been notified.",
-                  "internalComment":"Standard connectivity issue with a known fix pattern.",
-                  "confidence":0.96
-                }
-                """);
+        Mockito.when(chatModel.chat(Mockito.any(ChatRequest.class))).thenAnswer(invocation -> {
+            ChatRequest request = invocation.getArgument(0);
+            if (containsPrompt(request, "context-planning agent")) {
+                return plannerDoneResponse();
+            }
+            if (containsPrompt(request, "grievance triage classifier")) {
+                return jsonResponse("""
+                        {
+                          "priority":"LOW",
+                          "aiTitle":"WiFi connectivity issue",
+                          "confidence":0.96
+                        }
+                        """);
+            }
+            if (containsPrompt(request, "resolution assistant")) {
+                return jsonResponse("""
+                        {
+                          "autoResolve":true,
+                          "resolutionText":"Please reset your WiFi profile and reconnect. IT support has been notified.",
+                          "internalComment":"Standard connectivity issue with a known fix pattern.",
+                          "confidence":0.96
+                        }
+                        """);
+            }
+            return plannerDoneResponse();
+        });
 
         String token = loginAndGetBearerToken();
         long categoryId = getCatalogCategoryIdByName("IT Support");
@@ -100,5 +126,23 @@ class GrievanceApiAiLlmOnlyIT extends GrievanceApiIntegrationTestSupport {
         assertEquals(Status.RESOLVED, statusHistory.get(0).getToStatus());
         assertTrue(statusHistory.get(0).getReason() != null
                 && statusHistory.get(0).getReason().contains("Resolved by AI"));
+    }
+
+    private ChatResponse plannerDoneResponse() {
+        return ChatResponse.builder()
+                .aiMessage(AiMessage.from("Sufficient context collected."))
+                .build();
+    }
+
+    private ChatResponse jsonResponse(String json) {
+        return ChatResponse.builder()
+                .aiMessage(AiMessage.from(json))
+                .build();
+    }
+
+    private boolean containsPrompt(ChatRequest request, String needle) {
+        return request.messages().stream()
+                .map(ChatMessage::toString)
+                .anyMatch(message -> message.contains(needle));
     }
 }
