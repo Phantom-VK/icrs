@@ -8,24 +8,20 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 @Component
 public class GrievanceWorkflowGraph {
 
     private final GrievanceAgentTools tools;
     private final GrievanceWorkflowNodeHandler nodeHandler;
-    private final GrievanceWorkflowRoutingService routingService;
     private final CompiledGraph<GrievanceAgentState> graph;
 
     public GrievanceWorkflowGraph(
             GrievanceAgentTools tools,
-            GrievanceWorkflowNodeHandler nodeHandler,
-            GrievanceWorkflowRoutingService routingService
+            GrievanceWorkflowNodeHandler nodeHandler
     ) {
         this.tools = tools;
         this.nodeHandler = nodeHandler;
-        this.routingService = routingService;
         this.graph = compileGraph();
     }
 
@@ -43,11 +39,7 @@ public class GrievanceWorkflowGraph {
             workflow.addNode(GrievanceWorkflowNodeNames.LOAD_GRIEVANCE, nodeHandler::loadGrievance);
             workflow.addNode(GrievanceWorkflowNodeNames.ANALYZE_SENTIMENT, nodeHandler::analyzeSentiment);
             workflow.addNode(GrievanceWorkflowNodeNames.RETRIEVE_RAG_CONTEXT, nodeHandler::retrieveRagContext);
-            workflow.addNode(GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS, nodeHandler::planContextTools);
-            workflow.addNode(GrievanceWorkflowNodeNames.LOAD_POLICY_CONTEXT, nodeHandler::loadPolicyContext);
-            workflow.addNode(GrievanceWorkflowNodeNames.LOAD_COMMENT_CONTEXT, nodeHandler::loadCommentContext);
-            workflow.addNode(GrievanceWorkflowNodeNames.LOAD_STATUS_HISTORY_CONTEXT, nodeHandler::loadStatusHistoryContext);
-            workflow.addNode(GrievanceWorkflowNodeNames.LOAD_RESOLUTION_GUIDANCE_CONTEXT, nodeHandler::loadResolutionGuidanceContext);
+            workflow.addNode(GrievanceWorkflowNodeNames.COLLECT_CONTEXT, nodeHandler::collectContext);
             workflow.addNode(GrievanceWorkflowNodeNames.CLASSIFY_GRIEVANCE, nodeHandler::classifyGrievance);
             workflow.addNode(GrievanceWorkflowNodeNames.PERSIST_AI_METADATA, nodeHandler::persistAiMetadata);
             workflow.addNode(GrievanceWorkflowNodeNames.RESOLVE_GRIEVANCE, nodeHandler::resolveGrievance);
@@ -55,12 +47,8 @@ public class GrievanceWorkflowGraph {
             workflow.addEdge(GraphDefinition.START, GrievanceWorkflowNodeNames.LOAD_GRIEVANCE);
             workflow.addEdge(GrievanceWorkflowNodeNames.LOAD_GRIEVANCE, GrievanceWorkflowNodeNames.ANALYZE_SENTIMENT);
             workflow.addEdge(GrievanceWorkflowNodeNames.ANALYZE_SENTIMENT, GrievanceWorkflowNodeNames.RETRIEVE_RAG_CONTEXT);
-            workflow.addEdge(GrievanceWorkflowNodeNames.RETRIEVE_RAG_CONTEXT, GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS);
-            workflow.addConditionalEdges(GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS, this::routeAfterPlanner, routingService.routeMap());
-            workflow.addEdge(GrievanceWorkflowNodeNames.LOAD_POLICY_CONTEXT, GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS);
-            workflow.addEdge(GrievanceWorkflowNodeNames.LOAD_COMMENT_CONTEXT, GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS);
-            workflow.addEdge(GrievanceWorkflowNodeNames.LOAD_STATUS_HISTORY_CONTEXT, GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS);
-            workflow.addEdge(GrievanceWorkflowNodeNames.LOAD_RESOLUTION_GUIDANCE_CONTEXT, GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS);
+            workflow.addEdge(GrievanceWorkflowNodeNames.RETRIEVE_RAG_CONTEXT, GrievanceWorkflowNodeNames.COLLECT_CONTEXT);
+            workflow.addEdge(GrievanceWorkflowNodeNames.COLLECT_CONTEXT, GrievanceWorkflowNodeNames.CLASSIFY_GRIEVANCE);
             workflow.addEdge(GrievanceWorkflowNodeNames.CLASSIFY_GRIEVANCE, GrievanceWorkflowNodeNames.PERSIST_AI_METADATA);
             workflow.addEdge(GrievanceWorkflowNodeNames.PERSIST_AI_METADATA, GrievanceWorkflowNodeNames.RESOLVE_GRIEVANCE);
             workflow.addEdge(GrievanceWorkflowNodeNames.RESOLVE_GRIEVANCE, GrievanceWorkflowNodeNames.FINALIZE_DECISION);
@@ -69,9 +57,5 @@ public class GrievanceWorkflowGraph {
         } catch (GraphStateException e) {
             throw new IllegalStateException("Failed to initialize grievance workflow graph", e);
         }
-    }
-
-    private CompletableFuture<String> routeAfterPlanner(GrievanceAgentState state) {
-        return CompletableFuture.completedFuture(routingService.nextContextRoute(state));
     }
 }

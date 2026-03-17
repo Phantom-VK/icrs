@@ -17,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 public class GrievanceWorkflowNodeHandler {
 
     private final GrievanceAgentTools tools;
-    private final GrievanceWorkflowRoutingService routingService;
 
     public CompletableFuture<Map<String, Object>> loadGrievance(GrievanceAgentState state) {
         Long grievanceId = state.grievanceId();
@@ -49,86 +48,26 @@ public class GrievanceWorkflowNodeHandler {
         return CompletableFuture.completedFuture(Map.of(GrievanceAgentState.RAG_CONTEXT_SECTION, contextSection));
     }
 
-    public CompletableFuture<Map<String, Object>> planContextTools(GrievanceAgentState state) {
+    public CompletableFuture<Map<String, Object>> collectContext(GrievanceAgentState state) {
         Long grievanceId = state.grievanceId();
-        int nextIteration = state.plannerIteration() + 1;
-        logNodeStart(GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS, grievanceId);
-        ContextToolSelection selection = tools.selectContextTools(
+        logNodeStart(GrievanceWorkflowNodeNames.COLLECT_CONTEXT, grievanceId);
+        ContextCollectionResult result = tools.collectContext(
                 tools.loadGrievance(grievanceId),
                 state.sentiment(),
-                state.ragContextSection(),
-                state.policyContextSection(),
-                state.commentContextSection(),
-                state.statusHistoryContextSection(),
-                state.resolutionGuidanceContextSection(),
-                state.policyContextFetched(),
-                state.commentContextFetched(),
-                state.statusHistoryContextFetched(),
-                state.resolutionGuidanceContextFetched(),
-                nextIteration
+                state.ragContextSection()
         );
-        String nextTool = selection.getNextTool() != null ? selection.getNextTool().name() : NextTool.CLASSIFY.name();
-        String compactReason = routingService.compact(selection.getReason());
-        String plannerTrace = routingService.appendTrace(state.plannerTrace(), nextIteration + ":" + nextTool + "(" + compactReason + ")");
-        log.info(IcrsLog.event("ai.context-planner.decision",
-                "grievanceId", grievanceId,
-                "iteration", nextIteration,
-                "nextTool", nextTool,
-                "reason", compactReason,
-                "policyFetched", state.policyContextFetched(),
-                "commentFetched", state.commentContextFetched(),
-                "statusHistoryFetched", state.statusHistoryContextFetched(),
-                "resolutionGuidanceFetched", state.resolutionGuidanceContextFetched()));
         return CompletableFuture.completedFuture(Map.of(
-                GrievanceAgentState.NEXT_TOOL, nextTool,
-                GrievanceAgentState.NEXT_TOOL_REASON, compactReason,
-                GrievanceAgentState.PLANNER_ITERATION, nextIteration,
-                GrievanceAgentState.PLANNER_TRACE, plannerTrace
+                GrievanceAgentState.POLICY_CONTEXT_SECTION, result.policyContext(),
+                GrievanceAgentState.POLICY_CONTEXT_FETCHED, result.policyFetched(),
+                GrievanceAgentState.COMMENT_CONTEXT_SECTION, result.commentContext(),
+                GrievanceAgentState.COMMENT_CONTEXT_FETCHED, result.commentFetched(),
+                GrievanceAgentState.STATUS_HISTORY_CONTEXT_SECTION, result.statusHistoryContext(),
+                GrievanceAgentState.STATUS_HISTORY_CONTEXT_FETCHED, result.statusHistoryFetched(),
+                GrievanceAgentState.RESOLUTION_GUIDANCE_CONTEXT_SECTION, result.resolutionGuidanceContext(),
+                GrievanceAgentState.RESOLUTION_GUIDANCE_CONTEXT_FETCHED, result.resolutionGuidanceFetched(),
+                GrievanceAgentState.PLANNER_TRACE, result.plannerTrace(),
+                GrievanceAgentState.ROUTE_TRACE, result.routeTrace()
         ));
-    }
-
-    public CompletableFuture<Map<String, Object>> loadPolicyContext(GrievanceAgentState state) {
-        return fetchContextTool(
-                state,
-                GrievanceWorkflowNodeNames.LOAD_POLICY_CONTEXT,
-                "POLICY",
-                GrievanceAgentState.POLICY_CONTEXT_SECTION,
-                GrievanceAgentState.POLICY_CONTEXT_FETCHED,
-                tools.buildPolicyContext(state.grievanceId())
-        );
-    }
-
-    public CompletableFuture<Map<String, Object>> loadCommentContext(GrievanceAgentState state) {
-        return fetchContextTool(
-                state,
-                GrievanceWorkflowNodeNames.LOAD_COMMENT_CONTEXT,
-                "COMMENT",
-                GrievanceAgentState.COMMENT_CONTEXT_SECTION,
-                GrievanceAgentState.COMMENT_CONTEXT_FETCHED,
-                tools.buildCommentContext(state.grievanceId())
-        );
-    }
-
-    public CompletableFuture<Map<String, Object>> loadStatusHistoryContext(GrievanceAgentState state) {
-        return fetchContextTool(
-                state,
-                GrievanceWorkflowNodeNames.LOAD_STATUS_HISTORY_CONTEXT,
-                "STATUS_HISTORY",
-                GrievanceAgentState.STATUS_HISTORY_CONTEXT_SECTION,
-                GrievanceAgentState.STATUS_HISTORY_CONTEXT_FETCHED,
-                tools.buildStatusHistoryContext(state.grievanceId())
-        );
-    }
-
-    public CompletableFuture<Map<String, Object>> loadResolutionGuidanceContext(GrievanceAgentState state) {
-        return fetchContextTool(
-                state,
-                GrievanceWorkflowNodeNames.LOAD_RESOLUTION_GUIDANCE_CONTEXT,
-                "RESOLUTION_GUIDANCE",
-                GrievanceAgentState.RESOLUTION_GUIDANCE_CONTEXT_SECTION,
-                GrievanceAgentState.RESOLUTION_GUIDANCE_CONTEXT_FETCHED,
-                tools.buildResolutionGuidanceContext(state.grievanceId())
-        );
     }
 
     public CompletableFuture<Map<String, Object>> classifyGrievance(GrievanceAgentState state) {
@@ -136,8 +75,7 @@ public class GrievanceWorkflowNodeHandler {
         logNodeStart(GrievanceWorkflowNodeNames.CLASSIFY_GRIEVANCE, grievanceId);
         log.info(IcrsLog.event("ai.context-telemetry.pre-classification",
                 "grievanceId", grievanceId,
-                "plannerIterations", state.plannerIteration(),
-                "routeTrace", routingService.appendTrace(state.routeTrace(), "CLASSIFY"),
+                "routeTrace", appendTrace(state.routeTrace(), "CLASSIFY"),
                 "plannerTrace", state.plannerTrace()));
         try {
             ClassificationDecision decision = tools.classify(
@@ -192,8 +130,7 @@ public class GrievanceWorkflowNodeHandler {
         logNodeStart(GrievanceWorkflowNodeNames.FINALIZE_DECISION, grievanceId);
         log.info(IcrsLog.event("ai.context-telemetry.summary",
                 "grievanceId", grievanceId,
-                "plannerIterations", state.plannerIteration(),
-                "routeTrace", routingService.appendTrace(state.routeTrace(), "CLASSIFY"),
+                "routeTrace", appendTrace(state.routeTrace(), "CLASSIFY"),
                 "plannerTrace", state.plannerTrace(),
                 "policyFetched", state.policyContextFetched(),
                 "commentFetched", state.commentContextFetched(),
@@ -209,29 +146,6 @@ public class GrievanceWorkflowNodeHandler {
                 state.resolutionConfidence()
         );
         return CompletableFuture.completedFuture(Map.of());
-    }
-
-    private CompletableFuture<Map<String, Object>> fetchContextTool(
-            GrievanceAgentState state,
-            String nodeName,
-            String toolName,
-            String contentKey,
-            String fetchedKey,
-            String content
-    ) {
-        Long grievanceId = state.grievanceId();
-        logNodeStart(nodeName, grievanceId);
-        String routeTrace = routingService.appendTrace(state.routeTrace(), toolName);
-        log.info(IcrsLog.event("ai.context-tool.fetched",
-                "grievanceId", grievanceId,
-                "tool", toolName,
-                "iteration", state.plannerIteration(),
-                "routeTrace", routeTrace));
-        return CompletableFuture.completedFuture(Map.of(
-                contentKey, content,
-                fetchedKey, true,
-                GrievanceAgentState.ROUTE_TRACE, routeTrace
-        ));
     }
 
     private Map<String, Object> classificationUpdates(ClassificationDecision decision) {
@@ -267,5 +181,15 @@ public class GrievanceWorkflowNodeHandler {
 
     private void logNodeStart(String nodeName, Long grievanceId) {
         log.info(IcrsLog.event("ai.graph.node.start", "node", nodeName, "grievanceId", grievanceId));
+    }
+
+    private String appendTrace(String current, String next) {
+        if (!StringUtils.hasText(next)) {
+            return current;
+        }
+        if (!StringUtils.hasText(current)) {
+            return next;
+        }
+        return current + " -> " + next;
     }
 }

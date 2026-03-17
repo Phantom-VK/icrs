@@ -114,21 +114,48 @@ public class RagService {
     }
 
     private Long grievanceId(Document document) {
-        try {
-            Object value = document.getMetadata().get(GrievanceVectorDocumentFactory.GRIEVANCE_ID_METADATA_KEY);
-            if (value instanceof Number number) {
-                return number.longValue();
+        String metadataValue = metadataText(document, GrievanceVectorDocumentFactory.GRIEVANCE_ID_METADATA_KEY);
+        if (StringUtils.hasText(metadataValue)) {
+            try {
+                return Long.parseLong(metadataValue);
+            } catch (NumberFormatException ex) {
+                log.warn(IcrsLog.event("rag.retrieve.invalid-grievance-metadata-id",
+                        "documentId", document.getId(),
+                        "grievanceId", metadataValue), ex);
+                return null;
             }
-            if (value instanceof String text && StringUtils.hasText(text)) {
-                return Long.parseLong(text);
-            }
-            if (StringUtils.hasText(document.getId())) {
+        }
+
+        if (isNumeric(document.getId())) {
+            try {
                 return Long.parseLong(document.getId());
+            } catch (NumberFormatException ex) {
+                log.warn(IcrsLog.event("rag.retrieve.invalid-document-id", "documentId", document.getId()), ex);
+                return null;
             }
-        } catch (NumberFormatException ex) {
-            log.warn(IcrsLog.event("rag.retrieve.invalid-document-id", "documentId", document.getId()), ex);
+        }
+
+        if (!isManualImport(document)) {
+            log.debug(IcrsLog.event("rag.retrieve.non-numeric-document-id", "documentId", document.getId()));
         }
         return null;
+    }
+
+    private boolean isManualImport(Document document) {
+        String source = metadataText(document, GrievanceVectorDocumentFactory.SOURCE_METADATA_KEY);
+        return "manual-import".equalsIgnoreCase(source);
+    }
+
+    private boolean isNumeric(String value) {
+        if (!StringUtils.hasText(value)) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            if (!Character.isDigit(value.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private GrievanceContext fromDocument(Document document) {

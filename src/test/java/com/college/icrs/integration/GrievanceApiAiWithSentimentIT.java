@@ -4,7 +4,11 @@ import com.college.icrs.ai.service.SentimentAnalysisService;
 import com.college.icrs.model.Sentiment;
 import com.college.icrs.repository.StatusHistoryRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.response.ChatResponse;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,16 +48,32 @@ class GrievanceApiAiWithSentimentIT extends GrievanceApiIntegrationTestSupport {
                         "mock-sentiment-model"
                 ));
 
-        Mockito.when(chatModel.chat(Mockito.anyString())).thenReturn("""
-                {
-                  "priority":"MEDIUM",
-                  "aiTitle":"Hostel washroom maintenance request",
-                  "autoResolve":false,
-                  "resolutionText":"",
-                  "internalComment":"Requires hostel office review.",
-                  "confidence":0.70
-                }
-                """);
+        Mockito.when(chatModel.chat(Mockito.any(ChatRequest.class))).thenAnswer(invocation -> {
+            ChatRequest request = invocation.getArgument(0);
+            if (containsPrompt(request, "context-planning agent")) {
+                return plannerDoneResponse();
+            }
+            if (containsPrompt(request, "grievance triage classifier")) {
+                return jsonResponse("""
+                        {
+                          "priority":"MEDIUM",
+                          "aiTitle":"Hostel washroom maintenance request",
+                          "confidence":0.70
+                        }
+                        """);
+            }
+            if (containsPrompt(request, "resolution assistant")) {
+                return jsonResponse("""
+                        {
+                          "autoResolve":false,
+                          "resolutionText":"",
+                          "internalComment":"Requires hostel office review.",
+                          "confidence":0.70
+                        }
+                        """);
+            }
+            return plannerDoneResponse();
+        });
 
         String token = loginAndGetBearerToken();
         long categoryId = getCatalogCategoryIdByName("Hostel & Accommodation");
@@ -87,16 +107,32 @@ class GrievanceApiAiWithSentimentIT extends GrievanceApiIntegrationTestSupport {
                         "mock-sentiment-model"
                 ));
 
-        Mockito.when(chatModel.chat(Mockito.anyString())).thenReturn("""
-                {
-                  "priority":"HIGH",
-                  "aiTitle":"Sensitive grievance summary",
-                  "autoResolve":true,
-                  "resolutionText":"Auto response from AI",
-                  "internalComment":"LLM suggested auto resolution",
-                  "confidence":0.97
-                }
-                """);
+        Mockito.when(chatModel.chat(Mockito.any(ChatRequest.class))).thenAnswer(invocation -> {
+            ChatRequest request = invocation.getArgument(0);
+            if (containsPrompt(request, "context-planning agent")) {
+                return plannerDoneResponse();
+            }
+            if (containsPrompt(request, "grievance triage classifier")) {
+                return jsonResponse("""
+                        {
+                          "priority":"HIGH",
+                          "aiTitle":"Sensitive grievance summary",
+                          "confidence":0.97
+                        }
+                        """);
+            }
+            if (containsPrompt(request, "resolution assistant")) {
+                return jsonResponse("""
+                        {
+                          "autoResolve":true,
+                          "resolutionText":"Auto response from AI",
+                          "internalComment":"LLM suggested auto resolution",
+                          "confidence":0.97
+                        }
+                        """);
+            }
+            return plannerDoneResponse();
+        });
 
         String token = loginAndGetBearerToken();
         long categoryId = getCatalogCategoryIdByName("Harassment / PoSH");
@@ -124,5 +160,23 @@ class GrievanceApiAiWithSentimentIT extends GrievanceApiIntegrationTestSupport {
         boolean hasResolvedByAi = history.stream().anyMatch(h ->
                 h.getReason() != null && h.getReason().contains("Resolved by AI"));
         assertFalse(hasResolvedByAi);
+    }
+
+    private ChatResponse plannerDoneResponse() {
+        return ChatResponse.builder()
+                .aiMessage(AiMessage.from("Sufficient context collected."))
+                .build();
+    }
+
+    private ChatResponse jsonResponse(String json) {
+        return ChatResponse.builder()
+                .aiMessage(AiMessage.from(json))
+                .build();
+    }
+
+    private boolean containsPrompt(ChatRequest request, String needle) {
+        return request.messages().stream()
+                .map(ChatMessage::toString)
+                .anyMatch(message -> message.contains(needle));
     }
 }

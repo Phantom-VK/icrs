@@ -14,6 +14,7 @@ import java.util.List;
 public class GrievanceAgentTools {
 
     private final GrievanceAgentContextService contextService;
+    private final GrievanceContextPlannerAgent contextPlannerAgent;
     private final GrievanceAgentDecisionService decisionService;
     private final GrievanceAgentActionService actionService;
 
@@ -49,34 +50,12 @@ public class GrievanceAgentTools {
         return contextService.buildResolutionGuidanceContext(grievanceId);
     }
 
-    public ContextToolSelection selectContextTools(
+    public ContextCollectionResult collectContext(
             Grievance grievance,
             Sentiment sentiment,
-            String ragContext,
-            String policyContext,
-            String commentContext,
-            String statusHistoryContext,
-            String resolutionGuidanceContext,
-            boolean policyFetched,
-            boolean commentFetched,
-            boolean statusHistoryFetched,
-            boolean resolutionGuidanceFetched,
-            int plannerIteration
+            String ragContext
     ) {
-        return decisionService.selectContextTools(
-                grievance,
-                sentiment,
-                ragContext,
-                policyContext,
-                commentContext,
-                statusHistoryContext,
-                resolutionGuidanceContext,
-                policyFetched,
-                commentFetched,
-                statusHistoryFetched,
-                resolutionGuidanceFetched,
-                plannerIteration
-        );
+        return contextPlannerAgent.collectContext(grievance, sentiment, ragContext);
     }
 
     public ClassificationDecision classify(

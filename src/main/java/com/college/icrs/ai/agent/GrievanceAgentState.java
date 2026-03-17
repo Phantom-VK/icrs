@@ -12,9 +12,6 @@ public class GrievanceAgentState extends AgentState {
     public static final String SENTIMENT = "sentiment";
     public static final String SENTIMENT_MODEL_NAME = "sentimentModelName";
     public static final String RAG_CONTEXT_SECTION = "ragContextSection";
-    public static final String NEXT_TOOL = "nextTool";
-    public static final String NEXT_TOOL_REASON = "nextToolReason";
-    public static final String PLANNER_ITERATION = "plannerIteration";
     public static final String PLANNER_TRACE = "plannerTrace";
     public static final String ROUTE_TRACE = "routeTrace";
     public static final String POLICY_CONTEXT_SECTION = "policyContextSection";
@@ -59,26 +56,6 @@ public class GrievanceAgentState extends AgentState {
 
     public String ragContextSection() {
         return value(RAG_CONTEXT_SECTION).map(String.class::cast).orElse("");
-    }
-
-    public NextTool nextTool() {
-        String value = value(NEXT_TOOL).map(String.class::cast).orElse(null);
-        if (!StringUtils.hasText(value)) {
-            return NextTool.CLASSIFY;
-        }
-        try {
-            return NextTool.valueOf(value);
-        } catch (IllegalArgumentException ex) {
-            return NextTool.CLASSIFY;
-        }
-    }
-
-    public String nextToolReason() {
-        return value(NEXT_TOOL_REASON).map(String.class::cast).orElse(null);
-    }
-
-    public int plannerIteration() {
-        return value(PLANNER_ITERATION).map(Integer.class::cast).orElse(0);
     }
 
     public String plannerTrace() {
