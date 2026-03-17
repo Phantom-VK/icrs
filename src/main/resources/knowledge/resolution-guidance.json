@@ -1,0 +1,431 @@
+{
+  "categories": [
+    {
+      "category": "Academic",
+      "defaultGuidance": {
+        "officeName": "Academic Affairs Office",
+        "facultyOrDesk": "Department academic coordinator desk",
+        "responsibility": "General academic grievances, attendance regularization, and grade-related routing",
+        "building": "Academic Block A",
+        "floor": "First Floor",
+        "room": "A-112",
+        "openHours": "Monday-Friday, 9:30 AM-4:30 PM",
+        "contactEmail": "faculty@college.edu",
+        "studentAction": "Carry supporting documents such as mark sheets, attendance records, and course details when visiting the office.",
+        "escalationNote": "If the issue is not resolved within two working days, escalate through the Head of Department."
+      },
+      "subcategories": [
+        {
+          "subcategory": "Exams",
+          "guidance": {
+            "officeName": "Exam Cell Help Desk",
+            "facultyOrDesk": "Examination support desk",
+            "responsibility": "Exam timetable, seating, and hall-ticket coordination",
+            "building": "Academic Block A",
+            "floor": "Ground Floor",
+            "room": "A-018",
+            "openHours": "Monday-Friday, 10:00 AM-5:00 PM",
+            "contactEmail": "examcell@college.edu",
+            "studentAction": "Mention subject code, semester, and exam date while reporting the issue."
+          }
+        },
+        {
+          "subcategory": "Grades",
+          "guidance": {
+            "officeName": "Department Faculty Office",
+            "facultyOrDesk": "Course faculty or program coordinator",
+            "responsibility": "Grade correction and marks verification",
+            "building": "Academic Block A",
+            "floor": "First Floor",
+            "room": "A-120",
+            "openHours": "Monday-Friday, 11:00 AM-4:00 PM",
+            "contactEmail": "faculty@college.edu",
+            "studentAction": "Bring answer-script reference details or evaluation evidence if available."
+          }
+        },
+        {
+          "subcategory": "Attendance",
+          "guidance": {
+            "officeName": "Academic Affairs Office",
+            "facultyOrDesk": "Attendance regularization desk",
+            "responsibility": "Attendance shortage review and regularization",
+            "building": "Academic Block A",
+            "floor": "First Floor",
+            "room": "A-112",
+            "openHours": "Monday-Friday, 9:30 AM-4:30 PM",
+            "contactEmail": "faculty@college.edu",
+            "studentAction": "Carry approved leave letters or medical certificates for verification."
+          }
+        }
+      ]
+    },
+    {
+      "category": "Administrative",
+      "defaultGuidance": {
+        "officeName": "Administrative Office",
+        "facultyOrDesk": "Student records desk",
+        "responsibility": "Certificates, ID cards, and administrative process support",
+        "building": "Administration Block",
+        "floor": "Ground Floor",
+        "room": "ADM-103",
+        "openHours": "Monday-Friday, 10:00 AM-4:30 PM",
+        "contactEmail": "faculty2@college.edu",
+        "studentAction": "Keep enrollment number and identity proof available during the visit."
+      },
+      "subcategories": [
+        {
+          "subcategory": "Certificates",
+          "guidance": {
+            "officeName": "Records and Certificates Desk",
+            "facultyOrDesk": "Certificates desk",
+            "responsibility": "Bonafide, transcripts, and identity card requests",
+            "building": "Administration Block",
+            "floor": "Ground Floor",
+            "room": "ADM-105",
+            "openHours": "Monday-Friday, 10:00 AM-4:00 PM",
+            "contactEmail": "faculty2@college.edu",
+            "studentAction": "Mention the certificate type and urgency while following up."
+          }
+        },
+        {
+          "subcategory": "Transfers",
+          "guidance": {
+            "officeName": "Admissions and Student Services Desk",
+            "facultyOrDesk": "Transfer request desk",
+            "responsibility": "Section changes and branch transfer workflow",
+            "building": "Administration Block",
+            "floor": "First Floor",
+            "room": "ADM-201",
+            "openHours": "Monday-Friday, 11:00 AM-4:00 PM",
+            "contactEmail": "faculty2@college.edu",
+            "studentAction": "Carry current section details and any prior approval note."
+          }
+        }
+      ]
+    },
+    {
+      "category": "IT Support",
+      "defaultGuidance": {
+        "officeName": "IT Support Center",
+        "facultyOrDesk": "Campus IT help desk",
+        "responsibility": "Digital access, network issues, and lab systems",
+        "building": "Technology Block",
+        "floor": "Ground Floor",
+        "room": "IT-010",
+        "openHours": "Monday-Saturday, 9:00 AM-6:00 PM",
+        "contactEmail": "it.support@college.edu",
+        "contactPhone": "+91-90000-10001",
+        "studentAction": "Carry screenshots, device details, and error messages where possible."
+      },
+      "subcategories": [
+        {
+          "subcategory": "WiFi / Network",
+          "guidance": {
+            "officeName": "Network Operations Desk",
+            "facultyOrDesk": "Wi-Fi support desk",
+            "responsibility": "Campus Wi-Fi, VPN, and network access issues",
+            "building": "Technology Block",
+            "floor": "Ground Floor",
+            "room": "IT-014",
+            "openHours": "Monday-Saturday, 9:00 AM-6:00 PM",
+            "contactEmail": "it.support@college.edu",
+            "studentAction": "Share hostel/academic block location and device MAC address if available."
+          }
+        },
+        {
+          "subcategory": "LMS / Email",
+          "guidance": {
+            "officeName": "Digital Services Desk",
+            "facultyOrDesk": "LMS and email support desk",
+            "responsibility": "LMS access and college email account issues",
+            "building": "Technology Block",
+            "floor": "First Floor",
+            "room": "IT-118",
+            "openHours": "Monday-Friday, 9:30 AM-5:30 PM",
+            "contactEmail": "it.support@college.edu",
+            "studentAction": "Mention platform, registered email, and exact login error."
+          }
+        },
+        {
+          "subcategory": "Lab Machines",
+          "guidance": {
+            "officeName": "Laboratory Systems Support Desk",
+            "facultyOrDesk": "Lab administrator desk",
+            "responsibility": "Lab desktops, licensed software, and workstation issues",
+            "building": "Technology Block",
+            "floor": "Second Floor",
+            "room": "IT-223",
+            "openHours": "Monday-Friday, 10:00 AM-5:00 PM",
+            "contactEmail": "it.support@college.edu",
+            "studentAction": "Mention lab number, machine identifier, and the affected software."
+          }
+        }
+      ]
+    },
+    {
+      "category": "Hostel & Accommodation",
+      "defaultGuidance": {
+        "officeName": "Hostel Administration Office",
+        "facultyOrDesk": "Hostel warden office",
+        "responsibility": "Room allocation, facilities, and hostel services",
+        "building": "Hostel Block Office",
+        "floor": "Ground Floor",
+        "room": "H-001",
+        "openHours": "Monday-Saturday, 9:00 AM-5:00 PM",
+        "contactEmail": "hostel@college.edu",
+        "studentAction": "Carry hostel room details and resident ID while following up."
+      },
+      "subcategories": [
+        {
+          "subcategory": "Room Allocation",
+          "guidance": {
+            "officeName": "Hostel Allocation Desk",
+            "facultyOrDesk": "Accommodation desk",
+            "responsibility": "Room allotment and room-change requests",
+            "building": "Hostel Block Office",
+            "floor": "Ground Floor",
+            "room": "H-004",
+            "openHours": "Monday-Friday, 10:00 AM-4:30 PM",
+            "contactEmail": "hostel@college.edu",
+            "studentAction": "Mention current room number, requested change, and reason."
+          }
+        },
+        {
+          "subcategory": "Maintenance",
+          "guidance": {
+            "officeName": "Hostel Maintenance Desk",
+            "facultyOrDesk": "Facilities maintenance desk",
+            "responsibility": "Electrical, plumbing, and cleanliness issues in hostels",
+            "building": "Hostel Block Office",
+            "floor": "Ground Floor",
+            "room": "H-006",
+            "openHours": "Monday-Saturday, 8:00 AM-6:00 PM",
+            "contactEmail": "hostel@college.edu",
+            "studentAction": "Share hostel block, room number, and whether the issue is urgent or safety-related."
+          }
+        },
+        {
+          "subcategory": "Mess",
+          "guidance": {
+            "officeName": "Mess Management Desk",
+            "facultyOrDesk": "Mess supervisor office",
+            "responsibility": "Food quality, billing, and mess operations",
+            "building": "Dining Hall Complex",
+            "floor": "Ground Floor",
+            "room": "M-003",
+            "openHours": "Monday-Saturday, 9:30 AM-4:30 PM",
+            "contactEmail": "hostel@college.edu",
+            "studentAction": "Mention meal shift, date, and billing reference where applicable."
+          }
+        }
+      ]
+    },
+    {
+      "category": "Finance & Scholarships",
+      "defaultGuidance": {
+        "officeName": "Finance Office",
+        "facultyOrDesk": "Accounts and scholarship desk",
+        "responsibility": "Fee issues, scholarships, refunds, and financial clearances",
+        "building": "Administration Block",
+        "floor": "First Floor",
+        "room": "ADM-204",
+        "openHours": "Monday-Friday, 10:00 AM-4:30 PM",
+        "contactEmail": "finance@college.edu",
+        "studentAction": "Keep payment receipts, scholarship ID, and bank details ready for verification."
+      },
+      "subcategories": [
+        {
+          "subcategory": "Fee Payment",
+          "guidance": {
+            "officeName": "Accounts Desk",
+            "facultyOrDesk": "Fee payment support desk",
+            "responsibility": "Payment failures, challan mismatches, and late-fee review",
+            "building": "Administration Block",
+            "floor": "First Floor",
+            "room": "ADM-206",
+            "openHours": "Monday-Friday, 10:00 AM-4:30 PM",
+            "contactEmail": "finance@college.edu",
+            "studentAction": "Share transaction ID, payment date, and amount while following up."
+          }
+        },
+        {
+          "subcategory": "Scholarship",
+          "guidance": {
+            "officeName": "Scholarship Support Desk",
+            "facultyOrDesk": "Scholarship processing desk",
+            "responsibility": "Scholarship eligibility, document verification, and disbursement delays",
+            "building": "Administration Block",
+            "floor": "First Floor",
+            "room": "ADM-208",
+            "openHours": "Monday-Friday, 10:30 AM-4:30 PM",
+            "contactEmail": "finance@college.edu",
+            "studentAction": "Carry scholarship application number, bank details, and document acknowledgements."
+          }
+        },
+        {
+          "subcategory": "Refunds",
+          "guidance": {
+            "officeName": "Refund Processing Desk",
+            "facultyOrDesk": "Refund support desk",
+            "responsibility": "Refund timelines, approval status, and payment release",
+            "building": "Administration Block",
+            "floor": "First Floor",
+            "room": "ADM-210",
+            "openHours": "Monday-Friday, 11:00 AM-4:00 PM",
+            "contactEmail": "finance@college.edu",
+            "studentAction": "Mention refund request date, amount, and approval reference."
+          }
+        }
+      ]
+    },
+    {
+      "category": "Discipline & Safety",
+      "defaultGuidance": {
+        "officeName": "Discipline and Safety Office",
+        "facultyOrDesk": "Student discipline and safety desk",
+        "responsibility": "Code of conduct concerns and general campus safety routing",
+        "building": "Student Affairs Block",
+        "floor": "Ground Floor",
+        "room": "SA-012",
+        "openHours": "Monday-Friday, 9:30 AM-5:00 PM",
+        "contactEmail": "discipline@college.edu",
+        "studentAction": "Report urgent safety risks immediately to campus security before waiting for normal processing.",
+        "escalationNote": "For immediate danger or theft in progress, contact campus security and emergency response first."
+      },
+      "subcategories": [
+        {
+          "subcategory": "Code of Conduct",
+          "guidance": {
+            "officeName": "Discipline Review Desk",
+            "facultyOrDesk": "Student conduct desk",
+            "responsibility": "Misconduct reporting and conduct review intake",
+            "building": "Student Affairs Block",
+            "floor": "Ground Floor",
+            "room": "SA-014",
+            "openHours": "Monday-Friday, 10:00 AM-4:30 PM",
+            "contactEmail": "discipline@college.edu",
+            "studentAction": "Provide incident date, location, and any supporting evidence or witness details."
+          }
+        },
+        {
+          "subcategory": "Security",
+          "guidance": {
+            "officeName": "Campus Security Control Room",
+            "facultyOrDesk": "Security control desk",
+            "responsibility": "Campus theft, security incidents, and urgent safety escalation",
+            "building": "Main Gate Security Block",
+            "floor": "Ground Floor",
+            "room": "SEC-001",
+            "openHours": "24x7",
+            "contactEmail": "discipline@college.edu",
+            "contactPhone": "+91-90000-10021",
+            "studentAction": "If the incident is active or urgent, report it immediately to the security control room and then keep the grievance updated."
+          }
+        }
+      ]
+    },
+    {
+      "category": "Examinations",
+      "defaultGuidance": {
+        "officeName": "Examination Cell",
+        "facultyOrDesk": "Exam coordination desk",
+        "responsibility": "Exam schedule, hall tickets, revaluation, and exam administration",
+        "building": "Academic Block A",
+        "floor": "Ground Floor",
+        "room": "A-020",
+        "openHours": "Monday-Friday, 10:00 AM-5:00 PM",
+        "contactEmail": "examcell@college.edu",
+        "studentAction": "Keep roll number, subject code, and semester details ready."
+      },
+      "subcategories": [
+        {
+          "subcategory": "Revaluation",
+          "guidance": {
+            "officeName": "Revaluation Desk",
+            "facultyOrDesk": "Revaluation support desk",
+            "responsibility": "Revaluation and recounting process guidance",
+            "building": "Academic Block A",
+            "floor": "Ground Floor",
+            "room": "A-022",
+            "openHours": "Monday-Friday, 10:30 AM-4:30 PM",
+            "contactEmail": "examcell@college.edu",
+            "studentAction": "Mention exam, subject code, and original result publication date."
+          }
+        },
+        {
+          "subcategory": "Exam Schedule",
+          "guidance": {
+            "officeName": "Exam Scheduling Desk",
+            "facultyOrDesk": "Timetable coordination desk",
+            "responsibility": "Timetable clashes and scheduling errors",
+            "building": "Academic Block A",
+            "floor": "Ground Floor",
+            "room": "A-024",
+            "openHours": "Monday-Friday, 10:00 AM-5:00 PM",
+            "contactEmail": "examcell@college.edu",
+            "studentAction": "Share the conflicting exam dates, subject names, and timetable copy if available."
+          }
+        },
+        {
+          "subcategory": "Hall Ticket",
+          "guidance": {
+            "officeName": "Hall Ticket Help Desk",
+            "facultyOrDesk": "Hall-ticket correction desk",
+            "responsibility": "Hall-ticket generation and correction issues",
+            "building": "Academic Block A",
+            "floor": "Ground Floor",
+            "room": "A-026",
+            "openHours": "Monday-Friday, 10:00 AM-5:00 PM",
+            "contactEmail": "examcell@college.edu",
+            "studentAction": "Carry a printout or screenshot of the hall-ticket issue during follow-up."
+          }
+        }
+      ]
+    },
+    {
+      "category": "Harassment / PoSH",
+      "defaultGuidance": {
+        "officeName": "Internal Complaints Committee Support Office",
+        "facultyOrDesk": "ICC confidential intake desk",
+        "responsibility": "Confidential PoSH and harassment complaint intake",
+        "building": "Student Support Center",
+        "floor": "Second Floor",
+        "room": "SSC-207",
+        "openHours": "Monday-Friday, 10:00 AM-4:00 PM",
+        "contactEmail": "icc@college.edu",
+        "studentAction": "Use confidential reporting channels and avoid sharing the complaint details in public spaces.",
+        "escalationNote": "For immediate safety risks, contact emergency support and then the ICC confidential desk."
+      },
+      "subcategories": [
+        {
+          "subcategory": "PoSH Complaint",
+          "guidance": {
+            "officeName": "ICC Confidential Desk",
+            "facultyOrDesk": "ICC intake desk",
+            "responsibility": "Confidential sexual-harassment complaint intake and routing",
+            "building": "Student Support Center",
+            "floor": "Second Floor",
+            "room": "SSC-207",
+            "openHours": "Monday-Friday, 10:00 AM-4:00 PM",
+            "contactEmail": "icc@college.edu",
+            "studentAction": "Use confidential channels and request a private appointment if needed."
+          }
+        },
+        {
+          "subcategory": "Ragging",
+          "guidance": {
+            "officeName": "Anti-Ragging and ICC Support Desk",
+            "facultyOrDesk": "Confidential anti-ragging desk",
+            "responsibility": "Anti-ragging complaint intake and protected routing",
+            "building": "Student Support Center",
+            "floor": "Second Floor",
+            "room": "SSC-209",
+            "openHours": "Monday-Friday, 10:00 AM-4:00 PM",
+            "contactEmail": "icc@college.edu",
+            "studentAction": "Share only the minimum required facts in digital channels and request confidential follow-up."
+          }
+        }
+      ]
+    }
+  ]
+}
