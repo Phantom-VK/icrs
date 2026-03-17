@@ -60,9 +60,11 @@ public class GrievanceWorkflowNodeHandler {
                 state.policyContextSection(),
                 state.commentContextSection(),
                 state.statusHistoryContextSection(),
+                state.resolutionGuidanceContextSection(),
                 state.policyContextFetched(),
                 state.commentContextFetched(),
                 state.statusHistoryContextFetched(),
+                state.resolutionGuidanceContextFetched(),
                 nextIteration
         );
         String nextTool = selection.getNextTool() != null ? selection.getNextTool().name() : NextTool.CLASSIFY.name();
@@ -75,7 +77,8 @@ public class GrievanceWorkflowNodeHandler {
                 "reason", compactReason,
                 "policyFetched", state.policyContextFetched(),
                 "commentFetched", state.commentContextFetched(),
-                "statusHistoryFetched", state.statusHistoryContextFetched()));
+                "statusHistoryFetched", state.statusHistoryContextFetched(),
+                "resolutionGuidanceFetched", state.resolutionGuidanceContextFetched()));
         return CompletableFuture.completedFuture(Map.of(
                 GrievanceAgentState.NEXT_TOOL, nextTool,
                 GrievanceAgentState.NEXT_TOOL_REASON, compactReason,
@@ -114,6 +117,17 @@ public class GrievanceWorkflowNodeHandler {
                 GrievanceAgentState.STATUS_HISTORY_CONTEXT_SECTION,
                 GrievanceAgentState.STATUS_HISTORY_CONTEXT_FETCHED,
                 tools.buildStatusHistoryContext(state.grievanceId())
+        );
+    }
+
+    public CompletableFuture<Map<String, Object>> loadResolutionGuidanceContext(GrievanceAgentState state) {
+        return fetchContextTool(
+                state,
+                GrievanceWorkflowNodeNames.LOAD_RESOLUTION_GUIDANCE_CONTEXT,
+                "RESOLUTION_GUIDANCE",
+                GrievanceAgentState.RESOLUTION_GUIDANCE_CONTEXT_SECTION,
+                GrievanceAgentState.RESOLUTION_GUIDANCE_CONTEXT_FETCHED,
+                tools.buildResolutionGuidanceContext(state.grievanceId())
         );
     }
 
@@ -164,7 +178,8 @@ public class GrievanceWorkflowNodeHandler {
                     state.ragContextSection(),
                     state.policyContextSection(),
                     state.commentContextSection(),
-                    state.statusHistoryContextSection()
+                    state.statusHistoryContextSection(),
+                    state.resolutionGuidanceContextSection()
             );
             return CompletableFuture.completedFuture(resolutionUpdates(decision));
         } catch (Exception e) {
@@ -182,7 +197,8 @@ public class GrievanceWorkflowNodeHandler {
                 "plannerTrace", state.plannerTrace(),
                 "policyFetched", state.policyContextFetched(),
                 "commentFetched", state.commentContextFetched(),
-                "statusHistoryFetched", state.statusHistoryContextFetched()));
+                "statusHistoryFetched", state.statusHistoryContextFetched(),
+                "resolutionGuidanceFetched", state.resolutionGuidanceContextFetched()));
         tools.finalizeDecision(
                 grievanceId,
                 state.sentimentModelName(),

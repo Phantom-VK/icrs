@@ -47,6 +47,7 @@ public class GrievanceWorkflowGraph {
             workflow.addNode(GrievanceWorkflowNodeNames.LOAD_POLICY_CONTEXT, nodeHandler::loadPolicyContext);
             workflow.addNode(GrievanceWorkflowNodeNames.LOAD_COMMENT_CONTEXT, nodeHandler::loadCommentContext);
             workflow.addNode(GrievanceWorkflowNodeNames.LOAD_STATUS_HISTORY_CONTEXT, nodeHandler::loadStatusHistoryContext);
+            workflow.addNode(GrievanceWorkflowNodeNames.LOAD_RESOLUTION_GUIDANCE_CONTEXT, nodeHandler::loadResolutionGuidanceContext);
             workflow.addNode(GrievanceWorkflowNodeNames.CLASSIFY_GRIEVANCE, nodeHandler::classifyGrievance);
             workflow.addNode(GrievanceWorkflowNodeNames.PERSIST_AI_METADATA, nodeHandler::persistAiMetadata);
             workflow.addNode(GrievanceWorkflowNodeNames.RESOLVE_GRIEVANCE, nodeHandler::resolveGrievance);
@@ -59,6 +60,7 @@ public class GrievanceWorkflowGraph {
             workflow.addEdge(GrievanceWorkflowNodeNames.LOAD_POLICY_CONTEXT, GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS);
             workflow.addEdge(GrievanceWorkflowNodeNames.LOAD_COMMENT_CONTEXT, GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS);
             workflow.addEdge(GrievanceWorkflowNodeNames.LOAD_STATUS_HISTORY_CONTEXT, GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS);
+            workflow.addEdge(GrievanceWorkflowNodeNames.LOAD_RESOLUTION_GUIDANCE_CONTEXT, GrievanceWorkflowNodeNames.PLAN_CONTEXT_TOOLS);
             workflow.addEdge(GrievanceWorkflowNodeNames.CLASSIFY_GRIEVANCE, GrievanceWorkflowNodeNames.PERSIST_AI_METADATA);
             workflow.addEdge(GrievanceWorkflowNodeNames.PERSIST_AI_METADATA, GrievanceWorkflowNodeNames.RESOLVE_GRIEVANCE);
             workflow.addEdge(GrievanceWorkflowNodeNames.RESOLVE_GRIEVANCE, GrievanceWorkflowNodeNames.FINALIZE_DECISION);

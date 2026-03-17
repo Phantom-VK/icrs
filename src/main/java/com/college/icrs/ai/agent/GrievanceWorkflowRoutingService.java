@@ -11,7 +11,7 @@ import java.util.Map;
 @Slf4j
 public class GrievanceWorkflowRoutingService {
 
-    private static final int MAX_PLANNER_ITERATIONS = 4;
+    private static final int MAX_PLANNER_ITERATIONS = 5;
 
     public String nextContextRoute(GrievanceAgentState state) {
         if (state.plannerIteration() >= MAX_PLANNER_ITERATIONS) {
@@ -33,6 +33,9 @@ public class GrievanceWorkflowRoutingService {
         if (nextTool == NextTool.STATUS_HISTORY && !state.statusHistoryContextFetched()) {
             return logAndReturnRoute(state, GrievanceWorkflowNodeNames.ROUTE_HISTORY);
         }
+        if (nextTool == NextTool.RESOLUTION_GUIDANCE && !state.resolutionGuidanceContextFetched()) {
+            return logAndReturnRoute(state, GrievanceWorkflowNodeNames.ROUTE_GUIDANCE);
+        }
         return logAndReturnRoute(state, GrievanceWorkflowNodeNames.ROUTE_CLASSIFY);
     }
 
@@ -41,6 +44,7 @@ public class GrievanceWorkflowRoutingService {
                 GrievanceWorkflowNodeNames.ROUTE_POLICY, GrievanceWorkflowNodeNames.LOAD_POLICY_CONTEXT,
                 GrievanceWorkflowNodeNames.ROUTE_COMMENT, GrievanceWorkflowNodeNames.LOAD_COMMENT_CONTEXT,
                 GrievanceWorkflowNodeNames.ROUTE_HISTORY, GrievanceWorkflowNodeNames.LOAD_STATUS_HISTORY_CONTEXT,
+                GrievanceWorkflowNodeNames.ROUTE_GUIDANCE, GrievanceWorkflowNodeNames.LOAD_RESOLUTION_GUIDANCE_CONTEXT,
                 GrievanceWorkflowNodeNames.ROUTE_CLASSIFY, GrievanceWorkflowNodeNames.CLASSIFY_GRIEVANCE
         );
     }

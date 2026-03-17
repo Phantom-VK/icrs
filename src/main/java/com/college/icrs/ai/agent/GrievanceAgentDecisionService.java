@@ -27,9 +27,11 @@ public class GrievanceAgentDecisionService {
             String policyContext,
             String commentContext,
             String statusHistoryContext,
+            String resolutionGuidanceContext,
             boolean policyFetched,
             boolean commentFetched,
             boolean statusHistoryFetched,
+            boolean resolutionGuidanceFetched,
             int plannerIteration
     ) {
         log.info(IcrsLog.event("ai.context-planner.requested", "grievanceId", grievance.getId()));
@@ -39,7 +41,7 @@ public class GrievanceAgentDecisionService {
 
                 JSON schema:
                 {
-                  "nextTool": "POLICY|COMMENT|STATUS_HISTORY|CLASSIFY",
+                  "nextTool": "POLICY|COMMENT|STATUS_HISTORY|RESOLUTION_GUIDANCE|CLASSIFY",
                   "reason": "short explanation"
                 }
 
@@ -48,6 +50,7 @@ public class GrievanceAgentDecisionService {
                 - Choose POLICY when institutional rules, sensitivity, assignment, or privacy constraints may matter and policy has not already been fetched.
                 - Choose COMMENT only if the conversation thread could materially change triage or resolution and comments have not already been fetched.
                 - Choose STATUS_HISTORY only if prior transitions may matter and status history has not already been fetched.
+                - Choose RESOLUTION_GUIDANCE when office location, responsible desk, faculty routing, contact details, or office hours would materially improve the final student-facing resolution and guidance has not already been fetched.
                 - Choose CLASSIFY when the current context is sufficient.
                 - Never request a tool that has already been fetched.
 
@@ -61,6 +64,8 @@ public class GrievanceAgentDecisionService {
                 - policyFetched: %s
                 - commentFetched: %s
                 - statusHistoryFetched: %s
+                - resolutionGuidanceFetched: %s
+                %s
                 %s
                 %s
                 %s
@@ -75,10 +80,12 @@ public class GrievanceAgentDecisionService {
                 policyFetched,
                 commentFetched,
                 statusHistoryFetched,
+                resolutionGuidanceFetched,
                 formatPromptSection("Retrieved cases", ragContext),
                 formatPromptSection("Current policy context", policyContext),
                 formatPromptSection("Current comment context", commentContext),
-                formatPromptSection("Current status history", statusHistoryContext)
+                formatPromptSection("Current status history", statusHistoryContext),
+                formatPromptSection("Current resolution guidance", resolutionGuidanceContext)
         );
 
         try {
@@ -151,7 +158,8 @@ public class GrievanceAgentDecisionService {
             String ragContext,
             String policyContext,
             String commentContext,
-            String statusHistoryContext
+            String statusHistoryContext,
+            String resolutionGuidanceContext
     ) throws Exception {
         log.info(IcrsLog.event("ai.resolution.requested", "grievanceId", grievance.getId()));
         String classificationTitle = normalizeTitle(grievance.getAiTitle(), grievance.getTitle());
@@ -170,6 +178,8 @@ public class GrievanceAgentDecisionService {
                 Rules:
                 - Provide autoResolve=false if you are unsure or the category is sensitive.
                 - Keep resolutionText concise, factual, and actionable.
+                - When resolution guidance is available, use it to mention the correct office, desk, building, room, timings, or contact channel.
+                - Do not invent office locations, timings, contact details, or faculty routing that are not present in the provided context.
                 - Never claim to take actions you cannot verify.
 
                 Context:
@@ -179,6 +189,7 @@ public class GrievanceAgentDecisionService {
                 - subcategory: %s
                 - sentiment: %s
                 - classificationTitle: %s
+                %s
                 %s
                 %s
                 %s
@@ -193,7 +204,8 @@ public class GrievanceAgentDecisionService {
                 formatPromptSection("Retrieved cases", ragContext),
                 formatPromptSection("Policy signals", policyContext),
                 formatPromptSection("Comment thread", commentContext),
-                formatPromptSection("Status history", statusHistoryContext)
+                formatPromptSection("Status history", statusHistoryContext),
+                formatPromptSection("Resolution guidance", resolutionGuidanceContext)
         );
 
         String raw = chatModel.chat(prompt);
