@@ -1,9 +1,7 @@
 package com.college.icrs.ai.agent;
 
 import com.college.icrs.ai.service.SentimentAnalysisService;
-import com.college.icrs.logging.IcrsLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -13,21 +11,18 @@ import java.util.concurrent.CompletableFuture;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class GrievanceWorkflowNodeHandler {
 
     private final GrievanceAgentTools tools;
 
     public CompletableFuture<Map<String, Object>> loadGrievance(GrievanceAgentState state) {
         Long grievanceId = state.grievanceId();
-        logNodeStart(GrievanceWorkflowNodeNames.LOAD_GRIEVANCE, grievanceId);
         tools.loadGrievance(grievanceId);
         return CompletableFuture.completedFuture(Map.of());
     }
 
     public CompletableFuture<Map<String, Object>> analyzeSentiment(GrievanceAgentState state) {
         Long grievanceId = state.grievanceId();
-        logNodeStart(GrievanceWorkflowNodeNames.ANALYZE_SENTIMENT, grievanceId);
         SentimentAnalysisService.SentimentDecision decision = tools.analyzeSentiment(tools.loadGrievance(grievanceId));
         Map<String, Object> updates = new HashMap<>();
         if (decision != null && decision.sentiment() != null) {
@@ -41,7 +36,6 @@ public class GrievanceWorkflowNodeHandler {
 
     public CompletableFuture<Map<String, Object>> retrieveRagContext(GrievanceAgentState state) {
         Long grievanceId = state.grievanceId();
-        logNodeStart(GrievanceWorkflowNodeNames.RETRIEVE_RAG_CONTEXT, grievanceId);
         String contextSection = tools.buildContextSection(
                 tools.retrieveSimilar(tools.loadGrievance(grievanceId))
         );
@@ -50,7 +44,6 @@ public class GrievanceWorkflowNodeHandler {
 
     public CompletableFuture<Map<String, Object>> collectContext(GrievanceAgentState state) {
         Long grievanceId = state.grievanceId();
-        logNodeStart(GrievanceWorkflowNodeNames.COLLECT_CONTEXT, grievanceId);
         ContextCollectionResult result = tools.collectContext(
                 tools.loadGrievance(grievanceId),
                 state.sentiment(),
@@ -72,11 +65,6 @@ public class GrievanceWorkflowNodeHandler {
 
     public CompletableFuture<Map<String, Object>> classifyGrievance(GrievanceAgentState state) {
         Long grievanceId = state.grievanceId();
-        logNodeStart(GrievanceWorkflowNodeNames.CLASSIFY_GRIEVANCE, grievanceId);
-        log.info(IcrsLog.event("ai.context-telemetry.pre-classification",
-                "grievanceId", grievanceId,
-                "routeTrace", appendTrace(state.routeTrace(), "CLASSIFY"),
-                "plannerTrace", state.plannerTrace()));
         try {
             ClassificationDecision decision = tools.classify(
                     tools.loadGrievance(grievanceId),
@@ -94,7 +82,6 @@ public class GrievanceWorkflowNodeHandler {
 
     public CompletableFuture<Map<String, Object>> persistAiMetadata(GrievanceAgentState state) {
         Long grievanceId = state.grievanceId();
-        logNodeStart(GrievanceWorkflowNodeNames.PERSIST_AI_METADATA, grievanceId);
         tools.applyClassificationMetadata(
                 grievanceId,
                 state.sentiment(),
@@ -108,7 +95,6 @@ public class GrievanceWorkflowNodeHandler {
 
     public CompletableFuture<Map<String, Object>> resolveGrievance(GrievanceAgentState state) {
         Long grievanceId = state.grievanceId();
-        logNodeStart(GrievanceWorkflowNodeNames.RESOLVE_GRIEVANCE, grievanceId);
         try {
             ResolutionDecision decision = tools.resolve(
                     tools.loadGrievance(grievanceId),
@@ -127,15 +113,6 @@ public class GrievanceWorkflowNodeHandler {
 
     public CompletableFuture<Map<String, Object>> finalizeDecision(GrievanceAgentState state) {
         Long grievanceId = state.grievanceId();
-        logNodeStart(GrievanceWorkflowNodeNames.FINALIZE_DECISION, grievanceId);
-        log.info(IcrsLog.event("ai.context-telemetry.summary",
-                "grievanceId", grievanceId,
-                "routeTrace", appendTrace(state.routeTrace(), "CLASSIFY"),
-                "plannerTrace", state.plannerTrace(),
-                "policyFetched", state.policyContextFetched(),
-                "commentFetched", state.commentContextFetched(),
-                "statusHistoryFetched", state.statusHistoryContextFetched(),
-                "resolutionGuidanceFetched", state.resolutionGuidanceContextFetched()));
         tools.finalizeDecision(
                 grievanceId,
                 state.sentimentModelName(),
@@ -177,19 +154,5 @@ public class GrievanceWorkflowNodeHandler {
             updates.put(GrievanceAgentState.RESOLUTION_CONFIDENCE, decision.getConfidence());
         }
         return updates;
-    }
-
-    private void logNodeStart(String nodeName, Long grievanceId) {
-        log.info(IcrsLog.event("ai.graph.node.start", "node", nodeName, "grievanceId", grievanceId));
-    }
-
-    private String appendTrace(String current, String next) {
-        if (!StringUtils.hasText(next)) {
-            return current;
-        }
-        if (!StringUtils.hasText(current)) {
-            return next;
-        }
-        return current + " -> " + next;
     }
 }

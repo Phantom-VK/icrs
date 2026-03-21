@@ -17,8 +17,8 @@ import dev.langchain4j.invocation.InvocationParameters;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ToolChoice;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.bsc.langgraph4j.langchain4j.tool.LC4jToolService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -29,17 +29,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class GrievanceContextPlannerAgent {
 
     private static final int MAX_TOOL_CALL_ROUNDS = 5;
+    private static final int PLANNER_TIMEOUT_BUFFER_SECONDS = 5;
 
     private final ChatModel chatModel;
     private final IcrsProperties icrsProperties;
     private final GrievanceAgentContextService contextService;
+
+    public GrievanceContextPlannerAgent(
+            @Qualifier("plannerChatModel") ChatModel chatModel,
+            IcrsProperties icrsProperties,
+            GrievanceAgentContextService contextService
+    ) {
+        this.chatModel = chatModel;
+        this.icrsProperties = icrsProperties;
+        this.contextService = contextService;
+    }
 
     public ContextCollectionResult collectContext(
             Grievance grievance,
@@ -70,7 +82,20 @@ public class GrievanceContextPlannerAgent {
                     .toolChoice(availableSpecifications.isEmpty() ? ToolChoice.NONE : ToolChoice.AUTO)
                     .build();
 
-            AiMessage aiMessage = chatModel.chat(request).aiMessage();
+            AiMessage aiMessage;
+            try {
+                aiMessage = CompletableFuture
+                        .supplyAsync(() -> chatModel.chat(request).aiMessage())
+                        .orTimeout(plannerTimeoutSeconds(), TimeUnit.SECONDS)
+                        .join();
+            } catch (Exception e) {
+                plannerTrace = appendTrace(plannerTrace, "Planner timeout/fallback");
+                log.warn(IcrsLog.event("ai.context-planner.fallback",
+                        "grievanceId", grievance.getId(),
+                        "round", round,
+                        "reason", e.getClass().getSimpleName()));
+                break;
+            }
             messages.add(aiMessage);
 
             if (!aiMessage.hasToolExecutionRequests()) {
@@ -89,24 +114,9 @@ public class GrievanceContextPlannerAgent {
 
             routeTrace = appendTrace(routeTrace, requests.stream().map(ToolExecutionRequest::name).reduce((a, b) -> a + " -> " + b).orElse(""));
             plannerTrace = appendTrace(plannerTrace, "round-" + round + ": " + routeTraceSegment(requests));
-            int currentRound = round;
-            String currentRouteTrace = routeTrace;
 
             List<ToolExecutionResultMessage> results = executeTools(toolService, requests);
-            results.forEach(result -> log.info(IcrsLog.event("ai.context-tool.fetched",
-                    "grievanceId", grievance.getId(),
-                    "tool", result.toolName(),
-                    "iteration", currentRound,
-                    "routeTrace", currentRouteTrace)));
             messages.addAll(results);
-        }
-
-        if (!usedTools.isEmpty()) {
-            log.info(IcrsLog.event("ai.context-planner.decision",
-                    "grievanceId", grievance.getId(),
-                    "toolCount", usedTools.size(),
-                    "tools", String.join(",", usedTools),
-                    "plannerTrace", compact(plannerTrace)));
         }
 
         return new ContextCollectionResult(
@@ -216,6 +226,10 @@ public class GrievanceContextPlannerAgent {
 
     private String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private long plannerTimeoutSeconds() {
+        return Math.max(10, icrsProperties.getAi().getTimeoutSeconds() + PLANNER_TIMEOUT_BUFFER_SECONDS);
     }
 
     static final class ContextPlannerToolSet {

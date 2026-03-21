@@ -49,4 +49,9 @@ documents/*.pdf
 
 # Application logs
 logs/*.log
+logs/*.log.*
 /documents/AI_Layer_Technical_Workflow.md
+
+# Local evaluation / calibration artifacts
+/evaluation/
+/src/test/java/com/college/icrs/evaluation/
