@@ -17,6 +17,9 @@ import java.time.Duration;
 @Slf4j
 public class AiClient {
 
+    private static final int PLANNER_MAX_TOKENS = 160;
+    private static final int DECISION_MAX_TOKENS = 220;
+
     @Value("${ai.apikey}")
     private String apiKey;
 
@@ -26,31 +29,69 @@ public class AiClient {
     @Value("${ai.modelname:deepseek-chat}")
     private String modelName;
 
+    @Value("${ai.temperature:0.0}")
+    private Double temperature;
+
     private final IcrsProperties icrsProperties;
 
-    @Bean
-    public ChatModel chatModel() {
+    @Bean("plannerChatModel")
+    public ChatModel plannerChatModel() {
+        validateConfiguration();
+        log.info(IcrsLog.event("ai.chat-model.initialized",
+                "role", "planner",
+                "modelName", modelName,
+                "baseUrl", normalizeBaseUrl(baseUrl),
+                "timeoutSeconds", icrsProperties.getAi().getTimeoutSeconds(),
+                "maxCompletionTokens", PLANNER_MAX_TOKENS,
+                "temperature", temperature,
+                "maxRetries", 2));
 
+        return baseBuilder(normalizeBaseUrl(baseUrl))
+                .temperature(temperature)
+                .maxCompletionTokens(PLANNER_MAX_TOKENS)
+                .maxTokens(PLANNER_MAX_TOKENS)
+                .maxRetries(2)
+                .build();
+    }
+
+    @Bean("decisionChatModel")
+    public ChatModel decisionChatModel() {
+        validateConfiguration();
+        log.info(IcrsLog.event("ai.chat-model.initialized",
+                "role", "decision",
+                "modelName", modelName,
+                "baseUrl", normalizeBaseUrl(baseUrl),
+                "timeoutSeconds", icrsProperties.getAi().getTimeoutSeconds(),
+                "maxCompletionTokens", DECISION_MAX_TOKENS,
+                "temperature", 0.0,
+                "maxRetries", 2,
+                "responseFormat", "json_object"));
+
+        return baseBuilder(normalizeBaseUrl(baseUrl))
+                .temperature(0.0d)
+                .maxCompletionTokens(DECISION_MAX_TOKENS)
+                .maxTokens(DECISION_MAX_TOKENS)
+                .responseFormat("json_object")
+                .maxRetries(2)
+                .build();
+    }
+
+    private void validateConfiguration() {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("AI API key missing. Set ai.apikey or DEEPSEEK_API_KEY/OPENAI_API_KEY.");
         }
         if (baseUrl == null || baseUrl.isBlank()) {
             throw new IllegalStateException("AI base URL missing. Set ai.baseurl or DEEPSEEK_API_BASE/OPENAI_API_BASE.");
         }
+    }
 
-        log.info(IcrsLog.event("ai.chat-model.initialized",
-                "modelName", modelName,
-                "baseUrl", normalizeBaseUrl(baseUrl),
-                "timeoutSeconds", icrsProperties.getAi().getTimeoutSeconds(),
-                "maxCompletionTokens", icrsProperties.getAi().getMaxCompletionTokens()));
-
+    private OpenAiChatModel.OpenAiChatModelBuilder baseBuilder(String normalizedBaseUrl) {
         return OpenAiChatModel.builder()
                 .apiKey(apiKey)
-                .baseUrl(normalizeBaseUrl(baseUrl))
+                .baseUrl(normalizedBaseUrl)
                 .modelName(modelName)
                 .timeout(Duration.ofSeconds(Math.max(icrsProperties.getAi().getTimeoutSeconds(), 1)))
-                .maxCompletionTokens(Math.max(icrsProperties.getAi().getMaxCompletionTokens(), 1))
-                .build();
+                .maxCompletionTokens(Math.max(icrsProperties.getAi().getMaxCompletionTokens(), 1));
     }
 
     private String normalizeBaseUrl(String url) {
