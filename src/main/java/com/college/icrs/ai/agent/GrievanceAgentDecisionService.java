@@ -9,10 +9,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class GrievanceAgentDecisionService {
+
+    private static final int DECISION_TIMEOUT_BUFFER_SECONDS = 10;
+    private static final double FALLBACK_CONFIDENCE = 0.35d;
 
     private final IcrsProperties icrsProperties;
     private final GrievanceClassifierAiService classifierAiService;
@@ -27,17 +33,24 @@ public class GrievanceAgentDecisionService {
             String statusHistoryContext
     ) throws Exception {
         log.info(IcrsLog.event("ai.classification.requested", "grievanceId", grievance.getId()));
-        return classifierAiService.classify(
-                safe(grievance.getTitle()),
-                safe(truncate(grievance.getDescription(), icrsProperties.getAi().getMaxDescriptionChars())),
-                grievance.getCategory() != null ? safe(grievance.getCategory().getName()) : "UNKNOWN",
-                grievance.getSubcategory() != null ? safe(grievance.getSubcategory().getName()) : "UNKNOWN",
-                sentiment != null ? sentiment.name() : "UNKNOWN",
-                formatPromptSection("Retrieved cases", ragContext),
-                formatPromptSection("Policy signals", policyContext),
-                formatPromptSection("Comment thread", commentContext),
-                formatPromptSection("Status history", statusHistoryContext)
-        );
+        try {
+            return CompletableFuture.supplyAsync(() -> classifierAiService.classify(
+                    safe(grievance.getTitle()),
+                    safe(truncate(grievance.getDescription(), icrsProperties.getAi().getMaxDescriptionChars())),
+                    grievance.getCategory() != null ? safe(grievance.getCategory().getName()) : "UNKNOWN",
+                    grievance.getSubcategory() != null ? safe(grievance.getSubcategory().getName()) : "UNKNOWN",
+                    sentiment != null ? sentiment.name() : "UNKNOWN",
+                    formatPromptSection("Retrieved cases", ragContext),
+                    formatPromptSection("Policy signals", policyContext),
+                    formatPromptSection("Comment thread", commentContext),
+                    formatPromptSection("Status history", statusHistoryContext)
+            )).orTimeout(decisionTimeoutSeconds(), TimeUnit.SECONDS).join();
+        } catch (Exception e) {
+            log.warn(IcrsLog.event("ai.classification.fallback",
+                    "grievanceId", grievance.getId(),
+                    "reason", e.getClass().getSimpleName()));
+            return fallbackClassification(grievance);
+        }
     }
 
     public ResolutionDecision resolve(
@@ -51,19 +64,26 @@ public class GrievanceAgentDecisionService {
     ) throws Exception {
         log.info(IcrsLog.event("ai.resolution.requested", "grievanceId", grievance.getId()));
         String classificationTitle = normalizeTitle(grievance.getAiTitle(), grievance.getTitle());
-        return resolverAiService.resolve(
-                safe(grievance.getTitle()),
-                safe(truncate(grievance.getDescription(), icrsProperties.getAi().getMaxDescriptionChars())),
-                grievance.getCategory() != null ? safe(grievance.getCategory().getName()) : "UNKNOWN",
-                grievance.getSubcategory() != null ? safe(grievance.getSubcategory().getName()) : "UNKNOWN",
-                sentiment != null ? sentiment.name() : "UNKNOWN",
-                classificationTitle,
-                formatPromptSection("Retrieved cases", ragContext),
-                formatPromptSection("Policy signals", policyContext),
-                formatPromptSection("Comment thread", commentContext),
-                formatPromptSection("Status history", statusHistoryContext),
-                formatPromptSection("Resolution guidance", resolutionGuidanceContext)
-        );
+        try {
+            return CompletableFuture.supplyAsync(() -> resolverAiService.resolve(
+                    safe(grievance.getTitle()),
+                    safe(truncate(grievance.getDescription(), icrsProperties.getAi().getMaxDescriptionChars())),
+                    grievance.getCategory() != null ? safe(grievance.getCategory().getName()) : "UNKNOWN",
+                    grievance.getSubcategory() != null ? safe(grievance.getSubcategory().getName()) : "UNKNOWN",
+                    sentiment != null ? sentiment.name() : "UNKNOWN",
+                    classificationTitle,
+                    formatPromptSection("Retrieved cases", ragContext),
+                    formatPromptSection("Policy signals", policyContext),
+                    formatPromptSection("Comment thread", commentContext),
+                    formatPromptSection("Status history", statusHistoryContext),
+                    formatPromptSection("Resolution guidance", resolutionGuidanceContext)
+            )).orTimeout(decisionTimeoutSeconds(), TimeUnit.SECONDS).join();
+        } catch (Exception e) {
+            log.warn(IcrsLog.event("ai.resolution.fallback",
+                    "grievanceId", grievance.getId(),
+                    "reason", e.getClass().getSimpleName()));
+            return fallbackResolution();
+        }
     }
 
     private String normalizeTitle(String candidate, String fallback) {
@@ -91,5 +111,26 @@ public class GrievanceAgentDecisionService {
             return "";
         }
         return title + ":\n" + content;
+    }
+
+    private long decisionTimeoutSeconds() {
+        return Math.max(15, icrsProperties.getAi().getTimeoutSeconds() + DECISION_TIMEOUT_BUFFER_SECONDS);
+    }
+
+    private ClassificationDecision fallbackClassification(Grievance grievance) {
+        ClassificationDecision decision = new ClassificationDecision();
+        decision.setPriority("MEDIUM");
+        decision.setAiTitle(normalizeTitle(grievance.getTitle(), grievance.getTitle()));
+        decision.setConfidence(FALLBACK_CONFIDENCE);
+        return decision;
+    }
+
+    private ResolutionDecision fallbackResolution() {
+        ResolutionDecision decision = new ResolutionDecision();
+        decision.setAutoResolve(Boolean.FALSE);
+        decision.setResolutionText("Your grievance has been forwarded to the assigned college office for manual review and further action.");
+        decision.setInternalComment("Routed for human review after AI decision timeout.");
+        decision.setConfidence(FALLBACK_CONFIDENCE);
+        return decision;
     }
 }

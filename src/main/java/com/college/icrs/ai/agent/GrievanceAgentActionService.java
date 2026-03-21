@@ -128,12 +128,13 @@ public class GrievanceAgentActionService {
     }
 
     private boolean shouldAutoResolve(Grievance grievance, Boolean autoResolveRequested, String resolutionText, Double confidence) {
-        if (!Boolean.TRUE.equals(autoResolveRequested)) return false;
         if (grievance.getStatus() == Status.RESOLVED) return false;
         if (isSensitiveCategory(grievance)) return false;
         if (!StringUtils.hasText(resolutionText)) return false;
         if (confidence == null) return false;
-        return confidence >= icrsProperties.getAi().getAutoResolveConfidenceThreshold();
+        if (confidence < icrsProperties.getAi().getAutoResolveConfidenceThreshold()) return false;
+        if (Boolean.TRUE.equals(autoResolveRequested)) return true;
+        return isRoutineOperationalAutoResolveCandidate(grievance);
     }
 
     private boolean isSensitiveCategory(Grievance grievance) {
@@ -173,6 +174,24 @@ public class GrievanceAgentActionService {
         return llmModelName + " + sentiment:" + sentimentModelName;
     }
 
+    private boolean isRoutineOperationalAutoResolveCandidate(Grievance grievance) {
+        String category = grievance.getCategory() != null ? normalizeKey(grievance.getCategory().getName()) : "";
+        String subcategory = grievance.getSubcategory() != null ? normalizeKey(grievance.getSubcategory().getName()) : "";
+        String combinedText = normalizeKey("%s %s".formatted(grievance.getTitle(), grievance.getDescription()));
+
+        if ("ADMINISTRATIVE".equals(category)) {
+            return "CERTIFICATES".equals(subcategory)
+                    && (combinedText.contains("ID CARD") || combinedText.contains("IDENTITY CARD"));
+        }
+
+        if ("FINANCE SCHOLARSHIPS".equals(category)) {
+            return "FEE PAYMENT".equals(subcategory)
+                    && (combinedText.contains("RECEIPT") || combinedText.contains("PAYMENT RECEIPT"));
+        }
+
+        return false;
+    }
+
     private Priority parsePriority(String value) {
         if (!StringUtils.hasText(value)) return null;
         String normalized = value.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
@@ -209,5 +228,17 @@ public class GrievanceAgentActionService {
     private String normalizeNullable(String value) {
         if (!StringUtils.hasText(value)) return null;
         return value.trim();
+    }
+
+    private String normalizeKey(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        return value.trim()
+                .toUpperCase(Locale.ROOT)
+                .replace('&', ' ')
+                .replace('/', ' ')
+                .replace('-', ' ')
+                .replaceAll("\\s+", " ");
     }
 }
