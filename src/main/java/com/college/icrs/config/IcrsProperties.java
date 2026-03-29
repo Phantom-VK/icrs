@@ -57,7 +57,6 @@ public class IcrsProperties {
         private boolean autoStart = true;
         private String baseUrl = "http://localhost:8090";
         private int timeoutMs = 3000;
-        private double veryNegativeThreshold = 0.85d;
         private double neutralBandUpper = 0.60d;
         private String modelName = "siebert/sentiment-roberta-large-english";
         private String workingDir = "src/main/python/sentiment_service";
