@@ -1,0 +1,22 @@
+{
+  "routineRules": [
+    {
+      "name": "id-card-follow-up",
+      "category": "Administrative",
+      "subcategory": "Certificates",
+      "matchAnyPhrases": [
+        "id card",
+        "identity card"
+      ]
+    },
+    {
+      "name": "fee-receipt-follow-up",
+      "category": "Finance & Scholarships",
+      "subcategory": "Fee Payment",
+      "matchAnyPhrases": [
+        "receipt",
+        "payment receipt"
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 package com.college.icrs.ai.agent;
 
+import com.college.icrs.ai.policy.AutoResolutionPolicyService;
 import com.college.icrs.config.IcrsProperties;
 import com.college.icrs.logging.IcrsLog;
 import com.college.icrs.model.Category;
@@ -24,6 +25,7 @@ public class GrievanceAgentActionService {
 
     private final GrievanceService grievanceService;
     private final IcrsProperties icrsProperties;
+    private final AutoResolutionPolicyService autoResolutionPolicyService;
 
     @Value("${ai.modelname:deepseek-chat}")
     private String modelName;
@@ -134,7 +136,7 @@ public class GrievanceAgentActionService {
         if (confidence == null) return false;
         if (confidence < icrsProperties.getAi().getAutoResolveConfidenceThreshold()) return false;
         if (Boolean.TRUE.equals(autoResolveRequested)) return true;
-        return isRoutineOperationalAutoResolveCandidate(grievance);
+        return autoResolutionPolicyService.supportsRoutineAutoResolve(grievance);
     }
 
     private boolean isSensitiveCategory(Grievance grievance) {
@@ -174,24 +176,6 @@ public class GrievanceAgentActionService {
         return llmModelName + " + sentiment:" + sentimentModelName;
     }
 
-    private boolean isRoutineOperationalAutoResolveCandidate(Grievance grievance) {
-        String category = grievance.getCategory() != null ? normalizeKey(grievance.getCategory().getName()) : "";
-        String subcategory = grievance.getSubcategory() != null ? normalizeKey(grievance.getSubcategory().getName()) : "";
-        String combinedText = normalizeKey("%s %s".formatted(grievance.getTitle(), grievance.getDescription()));
-
-        if ("ADMINISTRATIVE".equals(category)) {
-            return "CERTIFICATES".equals(subcategory)
-                    && (combinedText.contains("ID CARD") || combinedText.contains("IDENTITY CARD"));
-        }
-
-        if ("FINANCE SCHOLARSHIPS".equals(category)) {
-            return "FEE PAYMENT".equals(subcategory)
-                    && (combinedText.contains("RECEIPT") || combinedText.contains("PAYMENT RECEIPT"));
-        }
-
-        return false;
-    }
-
     private Priority parsePriority(String value) {
         if (!StringUtils.hasText(value)) return null;
         String normalized = value.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
@@ -228,17 +212,5 @@ public class GrievanceAgentActionService {
     private String normalizeNullable(String value) {
         if (!StringUtils.hasText(value)) return null;
         return value.trim();
-    }
-
-    private String normalizeKey(String value) {
-        if (!StringUtils.hasText(value)) {
-            return "";
-        }
-        return value.trim()
-                .toUpperCase(Locale.ROOT)
-                .replace('&', ' ')
-                .replace('/', ' ')
-                .replace('-', ' ')
-                .replaceAll("\\s+", " ");
     }
 }
