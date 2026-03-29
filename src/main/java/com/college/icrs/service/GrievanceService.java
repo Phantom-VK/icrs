@@ -110,6 +110,7 @@ public class GrievanceService {
         grievance.setAssignedTo(faculty);
         grievance.setStatus(Status.IN_PROGRESS);
         Grievance updated = grievanceRepository.save(grievance);
+        embeddingService.indexGrievance(updated);
         grievanceNotificationService.sendAssignmentEmail(grievance.getStudent(), faculty, updated);
         return updated;
     }
@@ -121,6 +122,7 @@ public class GrievanceService {
         reconcileAiFlagsForManualStatusChange(grievance, status);
         grievance.setStatus(status);
         Grievance saved = grievanceRepository.save(grievance);
+        embeddingService.indexGrievance(saved);
         grievanceStatusAuditService.appendStatusHistory(saved, fromStatus, status, null);
 
         grievanceNotificationService.sendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, status);
@@ -167,6 +169,7 @@ public class GrievanceService {
         Status currentStatus = grievance.getStatus();
         applyAiRecommendation(grievance, aiResolutionText, aiResolutionComment, aiConfidence, aiModelName, aiDecisionSource, aiDecisionAt);
         Grievance saved = grievanceRepository.save(grievance);
+        embeddingService.indexGrievance(saved);
         grievanceStatusAuditService.appendStatusHistory(saved, currentStatus, currentStatus, "Redirected to the corresponding faculty by AI");
         log.info(IcrsLog.event("grievance.ai.manual-review.completed",
                 "grievanceId", grievanceId,
@@ -190,6 +193,7 @@ public class GrievanceService {
         applyResolvedByAi(grievance, aiResolutionText, aiResolutionComment, aiConfidence, aiModelName, aiDecisionSource);
 
         Grievance saved = grievanceRepository.save(grievance);
+        embeddingService.indexGrievance(saved);
         grievanceStatusAuditService.appendStatusHistory(saved, fromStatus, Status.RESOLVED, "Resolved by AI");
         grievanceNotificationService.sendStatusChangeEmail(grievance.getStudent(), saved, fromStatus, Status.RESOLVED);
         log.info(IcrsLog.event("grievance.ai.resolve.completed",

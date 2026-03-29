@@ -33,6 +33,7 @@ public class GrievanceVectorDocumentFactory {
                 grievance.getCategory() != null ? grievance.getCategory().getName() : null,
                 grievance.getSubcategory() != null ? grievance.getSubcategory().getName() : null,
                 grievance.getRegistrationNumber(),
+                resolvedCaseSummary(grievance),
                 grievance.getPriority(),
                 grievance.getSentiment(),
                 grievance.getAiResolutionText(),
@@ -49,6 +50,7 @@ public class GrievanceVectorDocumentFactory {
                 grievance.category(),
                 grievance.subcategory(),
                 grievance.registrationNumber(),
+                importedResolutionSummary(grievance.resolutionText()),
                 grievance.priority(),
                 grievance.sentiment(),
                 grievance.resolutionText(),
@@ -63,12 +65,24 @@ public class GrievanceVectorDocumentFactory {
             String subcategory,
             String registrationNumber
     ) {
+        return buildContent(title, description, category, subcategory, registrationNumber, null);
+    }
+
+    private String buildContent(
+            String title,
+            String description,
+            String category,
+            String subcategory,
+            String registrationNumber,
+            String resolutionSummary
+    ) {
         StringBuilder builder = new StringBuilder();
         appendSection(builder, "Title", title);
         appendSection(builder, "Description", description);
         appendSection(builder, "Category", category);
         appendSection(builder, "Subcategory", subcategory);
         appendSection(builder, "Registration Number", registrationNumber);
+        appendSection(builder, "Resolution Summary", resolutionSummary);
         return builder.toString().trim();
     }
 
@@ -80,6 +94,7 @@ public class GrievanceVectorDocumentFactory {
             String category,
             String subcategory,
             String registrationNumber,
+            String resolutionSummary,
             Priority priority,
             Sentiment sentiment,
             String resolutionText,
@@ -87,7 +102,7 @@ public class GrievanceVectorDocumentFactory {
     ) {
         return Document.builder()
                 .id(documentId)
-                .text(buildContent(title, description, category, subcategory, registrationNumber))
+                .text(buildContent(title, description, category, subcategory, registrationNumber, resolutionSummary))
                 .metadata(metadataFor(
                         grievanceId,
                         title,
@@ -101,6 +116,25 @@ public class GrievanceVectorDocumentFactory {
                         source
                 ))
                 .build();
+    }
+
+    private String resolvedCaseSummary(Grievance grievance) {
+        if (grievance == null || !grievance.isAiResolved()) {
+            return null;
+        }
+        return compactResolutionSummary(grievance.getAiResolutionText());
+    }
+
+    private String importedResolutionSummary(String resolutionText) {
+        return compactResolutionSummary(resolutionText);
+    }
+
+    private String compactResolutionSummary(String resolutionText) {
+        if (!StringUtils.hasText(resolutionText)) {
+            return null;
+        }
+        String normalized = resolutionText.trim().replaceAll("\\s+", " ");
+        return normalized.length() <= 220 ? normalized : normalized.substring(0, 220);
     }
 
     private Map<String, Object> metadataFor(
