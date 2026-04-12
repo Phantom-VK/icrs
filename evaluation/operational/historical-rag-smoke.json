@@ -1,0 +1,35 @@
+[
+  {
+    "documentId": "hist-it-001",
+    "title": "Resolved hostel WiFi login issue",
+    "description": "Students were unable to authenticate to the hostel WiFi after a router restart.",
+    "category": "IT Support",
+    "subcategory": "WiFi / Network",
+    "registrationNumber": "2022BIT001",
+    "priority": "LOW",
+    "sentiment": "NEGATIVE",
+    "resolutionText": "Students were asked to forget the network, renew DHCP, and reconnect after the access point restart."
+  },
+  {
+    "documentId": "hist-hostel-001",
+    "title": "Resolved water supply outage in hostel block",
+    "description": "The hostel block lost water supply because the overhead pump tripped overnight.",
+    "category": "Hostel & Accommodation",
+    "subcategory": "Maintenance",
+    "registrationNumber": "2022BIT015",
+    "priority": "HIGH",
+    "sentiment": "NEGATIVE",
+    "resolutionText": "The maintenance team reset the pump and restored supply after checking the tank line."
+  },
+  {
+    "documentId": "hist-finance-001",
+    "title": "Resolved online fee receipt delay",
+    "description": "The fee portal showed payment success but the receipt was not generated until finance reconciliation completed.",
+    "category": "Finance & Scholarships",
+    "subcategory": "Fee Payment",
+    "registrationNumber": "2022BIT027",
+    "priority": "MEDIUM",
+    "sentiment": "NEUTRAL",
+    "resolutionText": "Finance confirmed the transaction, refreshed the ledger, and issued the receipt after reconciliation."
+  }
+]

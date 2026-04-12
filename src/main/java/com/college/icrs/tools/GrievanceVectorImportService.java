@@ -102,7 +102,8 @@ public class GrievanceVectorImportService {
                 text(node, "registrationNumber"),
                 parsePriority(text(node, "priority")),
                 parseSentiment(text(node, "sentiment")),
-                firstNonBlank(text(node, "resolutionText"), text(node, "aiResolutionText"))
+                firstNonBlank(text(node, "resolutionText"), text(node, "aiResolutionText")),
+                firstNonBlank(text(node, "commentSummary"), commentSummary(node.get("comments")))
         );
     }
 
@@ -130,6 +131,53 @@ public class GrievanceVectorImportService {
             }
         }
         return null;
+    }
+
+    private String commentSummary(JsonNode commentsNode) {
+        if (commentsNode == null || commentsNode.isNull()) {
+            return null;
+        }
+        if (commentsNode.isTextual()) {
+            return textValue(commentsNode.asText());
+        }
+        if (!commentsNode.isArray()) {
+            return null;
+        }
+
+        List<String> entries = new ArrayList<>();
+        for (JsonNode commentNode : commentsNode) {
+            String entry = commentEntry(commentNode);
+            if (StringUtils.hasText(entry)) {
+                entries.add(entry);
+            }
+        }
+        return entries.isEmpty() ? null : String.join(" | ", entries);
+    }
+
+    private String commentEntry(JsonNode commentNode) {
+        if (commentNode == null || commentNode.isNull()) {
+            return null;
+        }
+        if (commentNode.isTextual()) {
+            return textValue(commentNode.asText());
+        }
+
+        String author = firstNonBlank(text(commentNode, "author"), text(commentNode, "authorName"), text(commentNode, "role"));
+        String body = firstNonBlank(text(commentNode, "body"), text(commentNode, "comment"), text(commentNode, "text"));
+        if (!StringUtils.hasText(author) && !StringUtils.hasText(body)) {
+            return null;
+        }
+        if (!StringUtils.hasText(author)) {
+            return body;
+        }
+        if (!StringUtils.hasText(body)) {
+            return author;
+        }
+        return author + ": " + body;
+    }
+
+    private String textValue(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 
     private Priority parsePriority(String value) {
