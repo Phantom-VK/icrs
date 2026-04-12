@@ -77,3 +77,34 @@ tasks.register<JavaExec>("importGrievanceVectors") {
 		systemProperty("grievanceImportReplaceExisting", it)
 	}
 }
+
+tasks.register<JavaExec>("runOperationalEvaluation") {
+	group = "application"
+	description = "Runs the paced operational evaluation workflow against a running ICRS backend"
+	classpath = sourceSets["main"].runtimeClasspath
+	mainClass.set("com.college.icrs.evaluation.OperationalEvaluationMain")
+	javaLauncher.set(javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(25)
+	})
+	dependsOn(tasks.named("classes"))
+
+	listOf(
+		"operationalEvaluationBackendBaseUrl",
+		"operationalEvaluationHistoricalFile",
+		"operationalEvaluationLiveFile",
+		"operationalEvaluationPauseMs",
+		"operationalEvaluationTimeoutMs",
+		"operationalEvaluationOutputDir",
+		"operationalEvaluationStudentEmail",
+		"operationalEvaluationStudentPassword",
+		"operationalEvaluationStudentName",
+		"operationalEvaluationStudentDepartment",
+		"operationalEvaluationStudentId",
+		"operationalEvaluationEarlyFailureWindow",
+		"operationalEvaluationEarlyFailureThreshold"
+	).forEach { propertyName ->
+		project.findProperty(propertyName)?.toString()?.takeIf { it.isNotBlank() }?.let {
+			systemProperty(propertyName, it)
+		}
+	}
+}

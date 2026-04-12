@@ -70,14 +70,15 @@ public class RagService {
         }
         return contexts.stream()
                 .map(ctx -> String.format(
-                        "- Reference %s (similarity=%s, priority=%s, sentiment=%s): title=%s; description=%s; priorResolution=%s",
+                        "- Reference %s (similarity=%s, priority=%s, sentiment=%s): title=%s; description=%s; priorResolution=%s; commentNotes=%s",
                         ctx.getReferenceId(),
                         formatScore(ctx.getSimilarityScore()),
                         ctx.getPriority(),
                         ctx.getSentiment(),
                         truncate(ctx.getTitle(), 120),
                         truncate(ctx.getDescription(), 240),
-                        truncate(ctx.getResolutionText(), 180)))
+                        truncate(ctx.getResolutionText(), 180),
+                        truncate(ctx.getCommentSummary(), 180)))
                 .collect(Collectors.joining("\n"));
     }
 
@@ -87,9 +88,13 @@ public class RagService {
         private String referenceId;
         private String title;
         private String description;
+        private String category;
+        private String subcategory;
         private Priority priority;
         private Sentiment sentiment;
         private String resolutionText;
+        private String commentSummary;
+        private String source;
         private Double similarityScore;
     }
 
@@ -102,9 +107,12 @@ public class RagService {
                         context.setReferenceId(String.valueOf(grievanceId));
                         context.setTitle(grievance.getTitle());
                         context.setDescription(grievance.getDescription());
+                        context.setCategory(grievance.getCategory() != null ? grievance.getCategory().getName() : null);
+                        context.setSubcategory(grievance.getSubcategory() != null ? grievance.getSubcategory().getName() : null);
                         context.setPriority(grievance.getPriority());
                         context.setSentiment(grievance.getSentiment());
                         context.setResolutionText(grievance.getAiResolutionText());
+                        context.setSource("application-grievance");
                         context.setSimilarityScore(document.getScore());
                         return context;
                     })
@@ -169,9 +177,13 @@ public class RagService {
         context.setReferenceId(document.getId());
         context.setTitle(title);
         context.setDescription(description);
+        context.setCategory(metadataText(document, GrievanceVectorDocumentFactory.CATEGORY_METADATA_KEY));
+        context.setSubcategory(metadataText(document, GrievanceVectorDocumentFactory.SUBCATEGORY_METADATA_KEY));
         context.setPriority(parsePriority(metadataText(document, GrievanceVectorDocumentFactory.PRIORITY_METADATA_KEY)));
         context.setSentiment(parseSentiment(metadataText(document, GrievanceVectorDocumentFactory.SENTIMENT_METADATA_KEY)));
         context.setResolutionText(metadataText(document, GrievanceVectorDocumentFactory.RESOLUTION_TEXT_METADATA_KEY));
+        context.setCommentSummary(metadataText(document, GrievanceVectorDocumentFactory.COMMENT_SUMMARY_METADATA_KEY));
+        context.setSource(metadataText(document, GrievanceVectorDocumentFactory.SOURCE_METADATA_KEY));
         context.setSimilarityScore(document.getScore());
         return context;
     }

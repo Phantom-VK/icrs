@@ -8,7 +8,9 @@ import com.college.icrs.logging.IcrsLog;
 import com.college.icrs.model.Comment;
 import com.college.icrs.model.Grievance;
 import com.college.icrs.model.Role;
+import com.college.icrs.model.Status;
 import com.college.icrs.model.User;
+import com.college.icrs.rag.EmbeddingService;
 import com.college.icrs.repository.CommentRepository;
 import com.college.icrs.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class GrievanceCommentService {
     private final CommentRepository commentRepository;
     private final PasswordEncoder passwordEncoder;
     private final GrievanceNotificationService grievanceNotificationService;
+    private final EmbeddingService embeddingService;
 
     public CommentResponseDTO addSystemComment(Grievance grievance, String systemAuthorEmail, String body) {
         log.info(IcrsLog.event("grievance.system-comment.start", "grievanceId", grievance.getId(), "authorEmail", systemAuthorEmail));
@@ -37,6 +40,7 @@ public class GrievanceCommentService {
         }
 
         Comment saved = saveComment(grievance, author, body);
+        refreshResolvedGrievanceEmbedding(grievance);
         if (grievance.getStudent() != null) {
             grievanceNotificationService.sendCommentEmailToStudent(grievance.getStudent(), grievance, author, body);
         }
@@ -53,6 +57,7 @@ public class GrievanceCommentService {
 
         validateCommentAuthor(grievance, author);
         Comment saved = saveComment(grievance, author, body);
+        refreshResolvedGrievanceEmbedding(grievance);
         notifyCommentParticipants(grievance, author, body);
 
         CommentResponseDTO dto = toCommentResponse(saved);
@@ -96,6 +101,12 @@ public class GrievanceCommentService {
         comment.setAuthor(author);
         comment.setBody(body);
         return commentRepository.save(comment);
+    }
+
+    private void refreshResolvedGrievanceEmbedding(Grievance grievance) {
+        if (grievance != null && grievance.getStatus() == Status.RESOLVED) {
+            embeddingService.indexGrievance(grievance);
+        }
     }
 
     private User ensureSystemAuthor(String systemAuthorEmail) {

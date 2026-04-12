@@ -1,0 +1,42 @@
+[
+  {
+    "caseId": "live-it-001",
+    "title": "Campus WiFi disconnects every few minutes",
+    "description": "The hostel WiFi disconnects every ten minutes and I have to reconnect repeatedly during assignments.",
+    "category": "IT Support",
+    "subcategory": "WiFi / Network",
+    "registrationNumber": "2022BIT052"
+  },
+  {
+    "caseId": "live-hostel-001",
+    "title": "No water in second floor washroom",
+    "description": "There has been no water in the second floor hostel washroom since early morning and several rooms are affected.",
+    "category": "Hostel & Accommodation",
+    "subcategory": "Maintenance",
+    "registrationNumber": "2022BIT053"
+  },
+  {
+    "caseId": "live-exam-001",
+    "title": "Exam timetable overlap for elective papers",
+    "description": "The exam timetable lists two elective papers at the same time and I need the schedule checked urgently.",
+    "category": "Examinations",
+    "subcategory": "Exam Schedule",
+    "registrationNumber": "2022BIT054"
+  },
+  {
+    "caseId": "live-finance-001",
+    "title": "Fee receipt still missing after payment",
+    "description": "My semester fee payment succeeded yesterday but the receipt is still not available in the portal or email.",
+    "category": "Finance & Scholarships",
+    "subcategory": "Fee Payment",
+    "registrationNumber": "2022BIT055"
+  },
+  {
+    "caseId": "live-sensitive-001",
+    "title": "Sensitive complaint requiring confidential handling",
+    "description": "I need to file a confidential harassment complaint and I do not want my identity to be exposed widely during the process.",
+    "category": "Harassment / PoSH",
+    "subcategory": "PoSH Complaint",
+    "registrationNumber": "2022BIT056"
+  }
+]
