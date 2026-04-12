@@ -18,6 +18,7 @@ public class EmbeddingService {
     private final VectorStore vectorStore;
     private final IcrsProperties properties;
     private final GrievanceVectorDocumentFactory documentFactory;
+    private final ResolvedGrievanceCommentSummaryService resolvedGrievanceCommentSummaryService;
 
     public void indexGrievance(Grievance grievance) {
         if (!properties.getAi().getRag().isEnabled() || grievance == null) {
@@ -31,7 +32,8 @@ public class EmbeddingService {
 
         try {
             String documentId = String.valueOf(grievance.getId());
-            vectorStore.add(List.of(documentFactory.fromGrievance(grievance)));
+            String commentSummary = resolvedGrievanceCommentSummaryService.summarizeForEmbedding(grievance);
+            vectorStore.add(List.of(documentFactory.fromGrievance(grievance, commentSummary)));
             log.info(IcrsLog.event("rag.embedding.upserted", "grievanceId", grievance.getId(), "documentId", documentId));
         } catch (Exception e) {
             log.error(IcrsLog.event("rag.embedding.upsert.failed", "grievanceId", grievance.getId()), e);

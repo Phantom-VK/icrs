@@ -26,6 +26,10 @@ public class GrievanceVectorDocumentFactory {
     public static final String SOURCE_METADATA_KEY = "source";
 
     public Document fromGrievance(Grievance grievance) {
+        return fromGrievance(grievance, null);
+    }
+
+    public Document fromGrievance(Grievance grievance, String commentSummary) {
         return fromParts(
                 String.valueOf(grievance.getId()),
                 grievance.getId(),
@@ -35,11 +39,11 @@ public class GrievanceVectorDocumentFactory {
                 grievance.getSubcategory() != null ? grievance.getSubcategory().getName() : null,
                 grievance.getRegistrationNumber(),
                 resolvedCaseSummary(grievance),
-                null,
+                compactCommentSummary(commentSummary),
                 grievance.getPriority(),
                 grievance.getSentiment(),
                 grievance.getAiResolutionText(),
-                null,
+                commentSummary,
                 "application-grievance"
         );
     }
