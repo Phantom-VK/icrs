@@ -1,0 +1,121 @@
+{
+  "summary" : {
+    "experimentVariant" : "rag_disabled",
+    "backendBaseUrl" : "http://localhost:18080",
+    "historicalFile" : "evaluation/operational/historical-rag-100.json",
+    "liveFile" : "evaluation/operational/live-grievances-100.json",
+    "submissionPauseMs" : 20000,
+    "perCaseTimeoutMs" : 180000,
+    "aiEnabled" : true,
+    "ragEnabled" : false,
+    "sentimentEnabled" : true,
+    "historicalCasesValidated" : 100,
+    "liveCasesValidated" : 100,
+    "stoppedEarly" : false,
+    "stopReason" : null,
+    "environmentHealth" : {
+      "backendReachable" : true,
+      "backendCategoryCount" : 8,
+      "databaseReachable" : true,
+      "vectorStoreCountBeforeRun" : 200,
+      "sentimentServiceHealthy" : true,
+      "sentimentBaseUrl" : "http://localhost:8090"
+    },
+    "cleanupSummary" : {
+      "studentEmail" : "evaluation.student@icrs.local",
+      "deletedExistingLiveGrievances" : 100,
+      "deletedExistingLiveVectorDocuments" : 100,
+      "clearedHistoricalVectorDocuments" : 100
+    },
+    "startedAt" : "2026-04-12T21:29:14.524399975",
+    "finishedAt" : "2026-04-12T22:40:04.555528953"
+  },
+  "metrics" : {
+    "totalCases" : 100,
+    "submittedCases" : 100,
+    "submissionSuccessRate" : 1.0,
+    "aiCompletedCases" : 100,
+    "aiCompletionRate" : 1.0,
+    "sentimentCompletedCases" : 100,
+    "sentimentCompletionRate" : 1.0,
+    "autoResolvedCases" : 42,
+    "autoResolutionRate" : 0.42,
+    "confidenceDistribution" : {
+      "mean" : 0.7337,
+      "median" : 0.73,
+      "min" : 0.7,
+      "p10" : 0.7,
+      "p90" : 0.765,
+      "max" : 0.815
+    },
+    "latencyDistribution" : {
+      "meanMillis" : 22054.16,
+      "medianMillis" : 21169.0
+    },
+    "experimentStateDistribution" : {
+      "completed" : 100
+    },
+    "finalStatusDistribution" : {
+      "IN_PROGRESS" : 58,
+      "RESOLVED" : 42
+    },
+    "categoryAutoResolution" : {
+      "Academic" : {
+        "totalCases" : 12,
+        "autoResolvedCases" : 0,
+        "autoResolutionRate" : 0.0
+      },
+      "Administrative" : {
+        "totalCases" : 10,
+        "autoResolvedCases" : 4,
+        "autoResolutionRate" : 0.4
+      },
+      "IT Support" : {
+        "totalCases" : 18,
+        "autoResolvedCases" : 14,
+        "autoResolutionRate" : 0.7777777777777778
+      },
+      "Hostel & Accommodation" : {
+        "totalCases" : 16,
+        "autoResolvedCases" : 13,
+        "autoResolutionRate" : 0.8125
+      },
+      "Finance & Scholarships" : {
+        "totalCases" : 16,
+        "autoResolvedCases" : 5,
+        "autoResolutionRate" : 0.3125
+      },
+      "Discipline & Safety" : {
+        "totalCases" : 8,
+        "autoResolvedCases" : 0,
+        "autoResolutionRate" : 0.0
+      },
+      "Examinations" : {
+        "totalCases" : 14,
+        "autoResolvedCases" : 6,
+        "autoResolutionRate" : 0.42857142857142855
+      },
+      "Harassment / PoSH" : {
+        "totalCases" : 6,
+        "autoResolvedCases" : 0,
+        "autoResolutionRate" : 0.0
+      }
+    },
+    "sensitiveHandling" : {
+      "sensitiveCases" : 14,
+      "sensitiveAutoResolvedCases" : 0,
+      "sensitiveAutoResolutionRate" : 0.0,
+      "nonSensitiveCases" : 86,
+      "nonSensitiveAutoResolvedCases" : 42,
+      "nonSensitiveAutoResolutionRate" : 0.4883720930232558
+    },
+    "retrievalMetrics" : {
+      "averageRetrievedReferencesPerCase" : 0.0,
+      "shareWithAtLeastOneReference" : 0.0,
+      "averageTop1SimilarityScore" : null,
+      "averageRetrievedSimilarityScore" : null,
+      "categoryMatchRate" : null,
+      "sourceDistribution" : { }
+    }
+  }
+}

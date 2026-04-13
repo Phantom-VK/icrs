@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record OperationalEvaluationResult(
+        String experimentVariant,
         String caseId,
         String title,
         String category,

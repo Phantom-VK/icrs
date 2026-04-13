@@ -23,7 +23,8 @@ public final class OperationalEvaluationMain {
             OperationalEvaluationService service = context.getBean(OperationalEvaluationService.class);
             OperationalEvaluationReport report = service.run(config);
             System.out.printf(
-                    "Operational evaluation finished. Results=%d, outputDir=%s%n",
+                    "Operational evaluation finished. Variant=%s, Results=%d, outputDir=%s%n",
+                    config.experimentVariant(),
                     report.results().size(),
                     config.outputDir().toAbsolutePath()
             );

@@ -20,6 +20,7 @@ public class OperationalEvaluationCsvWriter {
         Files.createDirectories(file.toAbsolutePath().getParent());
         StringBuilder builder = new StringBuilder();
         builder.append(String.join(",",
+                "experimentVariant",
                 "caseId",
                 "grievanceId",
                 "experimentState",
@@ -49,6 +50,7 @@ public class OperationalEvaluationCsvWriter {
         for (OperationalEvaluationResult result : results) {
             List<OperationalEvaluationRetrievedReference> references = result.retrievedReferences();
             builder.append(String.join(",",
+                    csv(result.experimentVariant()),
                     csv(result.caseId()),
                     csv(result.grievanceId()),
                     csv(result.experimentState()),

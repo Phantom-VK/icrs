@@ -56,5 +56,7 @@ logs/*.log.*
 /evaluation/*
 !/evaluation/README.md
 !/evaluation/operational/
+!/evaluation/reports/
 /evaluation/operational/*
 !/evaluation/operational/*.json
+!/evaluation/reports/**

@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 
 public record OperationalEvaluationConfig(
+        String experimentVariant,
         String backendBaseUrl,
         Path historicalFile,
         Path liveFile,
@@ -19,6 +20,8 @@ public record OperationalEvaluationConfig(
         int earlyFailureThreshold
 ) {
 
+    private static final String DEFAULT_RAG_ENABLED_VARIANT = "rag_enabled";
+    private static final String DEFAULT_RAG_DISABLED_VARIANT = "rag_disabled";
     private static final String DEFAULT_BACKEND_BASE_URL = "http://localhost:8080";
     private static final Path DEFAULT_HISTORICAL_FILE = Path.of("evaluation/operational/historical-rag-smoke.json");
     private static final Path DEFAULT_LIVE_FILE = Path.of("evaluation/operational/live-grievances-smoke.json");
@@ -28,6 +31,7 @@ public record OperationalEvaluationConfig(
 
     public static OperationalEvaluationConfig fromSystemProperties() {
         return new OperationalEvaluationConfig(
+                deriveExperimentVariant(),
                 systemProperty("operationalEvaluationBackendBaseUrl", DEFAULT_BACKEND_BASE_URL),
                 Path.of(systemProperty("operationalEvaluationHistoricalFile", DEFAULT_HISTORICAL_FILE.toString())),
                 Path.of(systemProperty("operationalEvaluationLiveFile", DEFAULT_LIVE_FILE.toString())),
@@ -42,6 +46,22 @@ public record OperationalEvaluationConfig(
                 intProperty("operationalEvaluationEarlyFailureWindow", 5),
                 intProperty("operationalEvaluationEarlyFailureThreshold", 3)
         );
+    }
+
+    private static String deriveExperimentVariant() {
+        String explicitVariant = systemProperty("operationalEvaluationVariant", null);
+        if (explicitVariant != null) {
+            return explicitVariant;
+        }
+
+        String ragEnabledValue = systemProperty("icrs.ai.rag.enabled", null);
+        if (ragEnabledValue == null) {
+            return DEFAULT_RAG_ENABLED_VARIANT;
+        }
+
+        return Boolean.parseBoolean(ragEnabledValue)
+                ? DEFAULT_RAG_ENABLED_VARIANT
+                : DEFAULT_RAG_DISABLED_VARIANT;
     }
 
     private static String systemProperty(String key, String fallback) {
