@@ -16,6 +16,7 @@ class OperationalEvaluationMetricsCalculatorTest {
     void shouldComputeOperationalMetricsFromResultRows() {
         List<OperationalEvaluationResult> results = List.of(
                 new OperationalEvaluationResult(
+                        "rag_enabled",
                         "live-1",
                         "WiFi disconnects",
                         "IT Support",
@@ -42,6 +43,7 @@ class OperationalEvaluationMetricsCalculatorTest {
                         )
                 ),
                 new OperationalEvaluationResult(
+                        "rag_enabled",
                         "live-2",
                         "Sensitive complaint",
                         "Harassment / PoSH",
@@ -65,6 +67,7 @@ class OperationalEvaluationMetricsCalculatorTest {
                         List.of()
                 ),
                 new OperationalEvaluationResult(
+                        "rag_enabled",
                         "live-3",
                         "Fee receipt missing",
                         "Finance & Scholarships",

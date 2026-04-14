@@ -1,0 +1,100 @@
+{
+  "comparisonVariant": "rag_enabled_vs_rag_disabled",
+  "ragEnabledRun": {
+    "metricsFile": "build/reports/operational-evaluation-rag/metrics.json",
+    "resultsFile": "build/reports/operational-evaluation-rag/results.json",
+    "resultsCsvFile": "build/reports/operational-evaluation-rag/results.csv",
+    "experimentVariant": "rag_enabled",
+    "ragEnabled": true,
+    "totalCases": 100,
+    "submissionSuccessRate": 1.0,
+    "aiCompletionRate": 1.0,
+    "sentimentCompletionRate": 1.0,
+    "autoResolvedCases": 42,
+    "autoResolutionRate": 0.42,
+    "sensitiveCases": 14,
+    "sensitiveAutoResolvedCases": 0,
+    "nonSensitiveCases": 86,
+    "nonSensitiveAutoResolvedCases": 42,
+    "meanConfidence": 0.73465,
+    "medianConfidence": 0.73,
+    "meanLatencyMillis": 25374.3,
+    "medianLatencyMillis": 23934.0,
+    "averageRetrievedReferencesPerCase": 3.0,
+    "shareWithAtLeastOneReference": 1.0,
+    "categoryMatchRate": 0.9266666666666666,
+    "runDurationSeconds": 4589
+  },
+  "ragDisabledRun": {
+    "metricsFile": "build/reports/operational-evaluation-no-rag/metrics.json",
+    "resultsFile": "build/reports/operational-evaluation-no-rag/results.json",
+    "resultsCsvFile": "build/reports/operational-evaluation-no-rag/results.csv",
+    "experimentVariant": "rag_disabled",
+    "ragEnabled": false,
+    "totalCases": 100,
+    "submissionSuccessRate": 1.0,
+    "aiCompletionRate": 1.0,
+    "sentimentCompletionRate": 1.0,
+    "autoResolvedCases": 42,
+    "autoResolutionRate": 0.42,
+    "sensitiveCases": 14,
+    "sensitiveAutoResolvedCases": 0,
+    "nonSensitiveCases": 86,
+    "nonSensitiveAutoResolvedCases": 42,
+    "meanConfidence": 0.7337,
+    "medianConfidence": 0.73,
+    "meanLatencyMillis": 22054.16,
+    "medianLatencyMillis": 21169.0,
+    "averageRetrievedReferencesPerCase": 0.0,
+    "shareWithAtLeastOneReference": 0.0,
+    "categoryMatchRate": null,
+    "runDurationSeconds": 4250
+  },
+  "topLineDelta": {
+    "autoResolvedCases": 0,
+    "autoResolutionRate": 0.0,
+    "meanConfidenceDelta": 0.00095,
+    "meanLatencyMillisDelta": 3320.14,
+    "meanLatencyPercentDelta": 13.08,
+    "runDurationSecondsDelta": 339,
+    "runDurationPercentDelta": 7.39
+  },
+  "categoryAutoResolutionDelta": {
+    "Academic": 0,
+    "Administrative": -1,
+    "IT Support": 1,
+    "Hostel & Accommodation": 0,
+    "Finance & Scholarships": -1,
+    "Discipline & Safety": 0,
+    "Examinations": 1,
+    "Harassment / PoSH": 0
+  },
+  "caseLevelComparison": {
+    "sharedCases": 100,
+    "casesWithAnyObservedDifference": 31,
+    "casesWithResolutionFlip": 4,
+    "casesWithConfidenceOnlyDifference": 27,
+    "ragOnlyResolvedCases": [
+      "live-013-bonafide-delay",
+      "live-069-duplicate-payment-refund"
+    ],
+    "noRagOnlyResolvedCases": [
+      "live-029-reset-mail-missing",
+      "live-091-blocked-wrong-dues"
+    ]
+  },
+  "interpretation": {
+    "supported": [
+      "RAG changes retrieval visibility and audit context under matched operational conditions.",
+      "RAG did not improve top-line auto-resolution rate on the current 100-case synthetic workload.",
+      "The deterministic safety gate prevented sensitive-case auto-resolution in both variants.",
+      "Disabling RAG reduced mean latency and end-to-end run duration."
+    ],
+    "notSupported": [
+      "Decision correctness improvement from RAG.",
+      "Resolution quality improvement from RAG.",
+      "Expert-judged retrieval usefulness.",
+      "Generalized claims about deployment impact."
+    ]
+  }
+}

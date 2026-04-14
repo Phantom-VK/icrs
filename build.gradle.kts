@@ -89,6 +89,42 @@ tasks.register<JavaExec>("runOperationalEvaluation") {
 	dependsOn(tasks.named("classes"))
 
 	listOf(
+		"operationalEvaluationVariant",
+		"operationalEvaluationBackendBaseUrl",
+		"operationalEvaluationHistoricalFile",
+		"operationalEvaluationLiveFile",
+		"operationalEvaluationPauseMs",
+		"operationalEvaluationTimeoutMs",
+		"operationalEvaluationOutputDir",
+		"operationalEvaluationStudentEmail",
+		"operationalEvaluationStudentPassword",
+		"operationalEvaluationStudentName",
+		"operationalEvaluationStudentDepartment",
+		"operationalEvaluationStudentId",
+		"operationalEvaluationEarlyFailureWindow",
+		"operationalEvaluationEarlyFailureThreshold",
+		"icrs.ai.rag.enabled"
+	).forEach { propertyName ->
+		project.findProperty(propertyName)?.toString()?.takeIf { it.isNotBlank() }?.let {
+			systemProperty(propertyName, it)
+		}
+	}
+}
+
+tasks.register<JavaExec>("runOperationalEvaluationNoRag") {
+	group = "application"
+	description = "Runs the operational evaluation workflow against a running ICRS backend with RAG disabled"
+	classpath = sourceSets["main"].runtimeClasspath
+	mainClass.set("com.college.icrs.evaluation.OperationalEvaluationMain")
+	javaLauncher.set(javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(25)
+	})
+	dependsOn(tasks.named("classes"))
+
+	systemProperty("icrs.ai.rag.enabled", "false")
+	systemProperty("operationalEvaluationVariant", "rag_disabled")
+
+	listOf(
 		"operationalEvaluationBackendBaseUrl",
 		"operationalEvaluationHistoricalFile",
 		"operationalEvaluationLiveFile",

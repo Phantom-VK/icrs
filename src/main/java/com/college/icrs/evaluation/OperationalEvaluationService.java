@@ -76,7 +76,13 @@ public class OperationalEvaluationService {
         for (int index = 0; index < datasets.liveCases().size(); index++) {
             OperationalEvaluationLiveCase liveCase = datasets.liveCases().get(index);
             String bearerToken = login(restClient, config);
-            results.add(runSingleCase(restClient, bearerToken, liveCase, config.perCaseTimeout()));
+            results.add(runSingleCase(
+                    restClient,
+                    bearerToken,
+                    liveCase,
+                    config.perCaseTimeout(),
+                    config.experimentVariant()
+            ));
 
             if (shouldStopEarly(results, config)) {
                 stoppedEarly = true;
@@ -91,12 +97,14 @@ public class OperationalEvaluationService {
 
         OperationalEvaluationMetrics metrics = metricsCalculator.calculate(results);
         OperationalEvaluationRunSummary summary = new OperationalEvaluationRunSummary(
+                config.experimentVariant(),
                 config.backendBaseUrl(),
                 config.historicalFile().toString(),
                 config.liveFile().toString(),
                 config.submissionPause().toMillis(),
                 config.perCaseTimeout().toMillis(),
                 icrsProperties.getAi().isEnabled(),
+                icrsProperties.getAi().getRag().isEnabled(),
                 icrsProperties.getAi().getSentiment().isEnabled(),
                 datasets.historicalCases().size(),
                 datasets.liveCases().size(),
@@ -116,7 +124,8 @@ public class OperationalEvaluationService {
             RestClient restClient,
             String bearerToken,
             OperationalEvaluationLiveCase liveCase,
-            Duration timeout
+            Duration timeout,
+            String experimentVariant
     ) {
         LocalDateTime submittedAt = LocalDateTime.now();
         try {
@@ -125,16 +134,29 @@ public class OperationalEvaluationService {
             GrievanceResponseDTO latest = pollForCompletion(restClient, bearerToken, created.getId(), timeout);
 
             if (latest == null) {
-                return buildTimeoutResult(liveCase, created.getId(), submittedAt, "Grievance not visible to student polling flow.");
+                return buildTimeoutResult(
+                        liveCase,
+                        created.getId(),
+                        submittedAt,
+                        "Grievance not visible to student polling flow.",
+                        experimentVariant
+                );
             }
 
             if (latest.getAiDecisionAt() == null && icrsProperties.getAi().isEnabled()) {
-                return buildTimeoutResult(liveCase, latest.getId(), submittedAt, "Timed out waiting for AI decision.");
+                return buildTimeoutResult(
+                        liveCase,
+                        latest.getId(),
+                        submittedAt,
+                        "Timed out waiting for AI decision.",
+                        experimentVariant
+                );
             }
 
-            return buildCompletedResult(liveCase, latest, submittedAt);
+            return buildCompletedResult(liveCase, latest, submittedAt, experimentVariant);
         } catch (Exception ex) {
             return new OperationalEvaluationResult(
+                    experimentVariant,
                     liveCase.caseId(),
                     liveCase.title(),
                     liveCase.category(),
@@ -163,10 +185,12 @@ public class OperationalEvaluationService {
     private OperationalEvaluationResult buildCompletedResult(
             OperationalEvaluationLiveCase liveCase,
             GrievanceResponseDTO latest,
-            LocalDateTime submittedAt
+            LocalDateTime submittedAt,
+            String experimentVariant
     ) {
         List<OperationalEvaluationRetrievedReference> references = retrievedReferences(liveCase, latest.getId());
         return new OperationalEvaluationResult(
+                experimentVariant,
                 liveCase.caseId(),
                 liveCase.title(),
                 liveCase.category(),
@@ -195,9 +219,11 @@ public class OperationalEvaluationService {
             OperationalEvaluationLiveCase liveCase,
             long grievanceId,
             LocalDateTime submittedAt,
-            String reason
+            String reason,
+            String experimentVariant
     ) {
         return new OperationalEvaluationResult(
+                experimentVariant,
                 liveCase.caseId(),
                 liveCase.title(),
                 liveCase.category(),

@@ -3,12 +3,14 @@ package com.college.icrs.evaluation;
 import java.time.LocalDateTime;
 
 public record OperationalEvaluationRunSummary(
+        String experimentVariant,
         String backendBaseUrl,
         String historicalFile,
         String liveFile,
         long submissionPauseMs,
         long perCaseTimeoutMs,
         boolean aiEnabled,
+        boolean ragEnabled,
         boolean sentimentEnabled,
         int historicalCasesValidated,
         int liveCasesValidated,

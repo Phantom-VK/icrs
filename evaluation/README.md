@@ -1,39 +1,29 @@
 # Operational Evaluation
 
-This directory contains the reproducible operational evaluation assets for ICRS.
+This directory contains the reproducible operational evaluation assets for ICRS, including the catalog-aligned datasets, the runner entrypoints, and the checked-in outputs from the matched RAG vs no-RAG ablation.
 
-## Purpose
+## What This Evaluation Measures
 
-The operational runner is intended for paper-safe system evaluation:
+The operational runner exercises the live application through the real HTTP API. It is designed to measure workflow behavior rather than decision correctness:
 
-- real API submission through `POST /grievances`
-- paced workload to avoid unnecessary LLM provider load
-- machine-readable result artifacts
-- validation against the current catalog taxonomy before a run starts
+- live submission through `POST /grievances`
+- paced execution to avoid unnecessary provider load
+- AI completion and sentiment completion rates
+- auto-resolution behavior under policy gating
+- retrieval usage when RAG is enabled
+- machine-readable artifacts for later analysis
 
-It is not the same as the older 20-case labelled pilot files in this folder. Those legacy files were useful for the earlier internal pilot, but the operational runner uses the catalog-aligned datasets under `evaluation/operational/`.
+This is separate from the older 20-case pilot material. The current operational study uses the catalog-aligned datasets under `evaluation/operational/`.
 
-## Input Files
+## Inputs
 
-Two JSON files are required.
+Two JSON inputs are required.
 
 `historical-rag-*.json`
 
-```json
-[
-  {
-    "documentId": "hist-it-001",
-    "title": "Resolved WiFi issue in hostel",
-    "description": "Students could not connect to the hostel access point.",
-    "category": "IT Support",
-    "subcategory": "WiFi / Network",
-    "registrationNumber": "2022BIT001",
-    "priority": "LOW",
-    "sentiment": "NEGATIVE",
-    "resolutionText": "Students were asked to forget the network and reconnect after router reset."
-  }
-]
-```
+- seeded into the vector store before the live run
+- represents resolved historical cases
+- supports `resolutionText` and optional `comments`
 
 Required fields:
 
@@ -44,27 +34,10 @@ Required fields:
 - `subcategory`
 - `registrationNumber`
 
-Optional fields:
-
-- `priority`
-- `sentiment`
-- `resolutionText`
-- `comments`
-
 `live-grievances-*.json`
 
-```json
-[
-  {
-    "caseId": "live-it-001",
-    "title": "Campus WiFi disconnects in hostel",
-    "description": "The hostel WiFi drops every few minutes.",
-    "category": "IT Support",
-    "subcategory": "WiFi / Network",
-    "registrationNumber": "2022BIT002"
-  }
-]
-```
+- submitted through the live backend during the run
+- represents the evaluation workload to be classified and processed
 
 Required fields:
 
@@ -75,55 +48,75 @@ Required fields:
 - `subcategory`
 - `registrationNumber`
 
-## Runner
+## How To Run
 
-The Gradle task is:
+RAG-enabled baseline:
 
 ```bash
 ./gradlew runOperationalEvaluation \
   -PoperationalEvaluationBackendBaseUrl=http://localhost:8080 \
-  -PoperationalEvaluationHistoricalFile=evaluation/operational/historical-rag-smoke.json \
-  -PoperationalEvaluationLiveFile=evaluation/operational/live-grievances-smoke.json \
-  -PoperationalEvaluationPauseMs=10000 \
-  -PoperationalEvaluationTimeoutMs=120000 \
-  -PoperationalEvaluationOutputDir=build/reports/operational-evaluation-smoke
+  -PoperationalEvaluationHistoricalFile=evaluation/operational/historical-rag-100.json \
+  -PoperationalEvaluationLiveFile=evaluation/operational/live-grievances-100.json \
+  -PoperationalEvaluationPauseMs=20000 \
+  -PoperationalEvaluationTimeoutMs=180000 \
+  -PoperationalEvaluationOutputDir=build/reports/operational-evaluation-rag
+```
+
+No-RAG ablation:
+
+```bash
+./gradlew runOperationalEvaluationNoRag \
+  -PoperationalEvaluationBackendBaseUrl=http://localhost:8080 \
+  -PoperationalEvaluationHistoricalFile=evaluation/operational/historical-rag-100.json \
+  -PoperationalEvaluationLiveFile=evaluation/operational/live-grievances-100.json \
+  -PoperationalEvaluationPauseMs=20000 \
+  -PoperationalEvaluationTimeoutMs=180000 \
+  -PoperationalEvaluationOutputDir=build/reports/operational-evaluation-no-rag
 ```
 
 Defaults:
 
 - backend base URL: `http://localhost:8080`
-- pause: `15000` ms
-- per-case timeout: `180000` ms
+- pause: `15000 ms`
+- per-case timeout: `180000 ms`
 - output directory: `build/reports/operational-evaluation`
-- student email: `evaluation.student@icrs.local`
-- student password: `Test@12345`
+- evaluation student: `evaluation.student@icrs.local`
 
-The runner:
+Variant handling:
 
-1. validates both datasets against the current catalog
-2. verifies backend and database reachability
-3. ensures one enabled student evaluation account exists
-4. clears only prior evaluation data for that student plus the current run’s historical vector document ids
-5. imports the historical vector cases
-6. logs in through `/auth/login` for each live submission so long runs do not depend on a single JWT lifetime
-7. submits live grievances through `/grievances`
-8. polls `/grievances/student/me` until AI metadata appears or the case times out
-9. writes:
-   - `results.json`
-   - `metrics.json`
-   - `results.csv`
+- `runOperationalEvaluation` defaults to `experimentVariant=rag_enabled`
+- `runOperationalEvaluationNoRag` forces `icrs.ai.rag.enabled=false` and `experimentVariant=rag_disabled`
+- `results.json`, `metrics.json`, and `results.csv` record the experiment variant
 
-## Output Metrics
+The runner validates the datasets against the live catalog, refreshes only evaluation-specific data, imports the historical corpus, logs in for each live submission so JWT expiry does not terminate long runs, submits grievances one by one, polls for AI completion, and writes per-run artifacts.
 
-The runner reports operational metrics only:
+## Checked-In Ablation Results
 
-- submission success rate
-- AI completion rate
-- sentiment completion rate
-- auto-resolution rate
-- mean and median AI latency
-- confidence distribution
-- experiment-state and final-status distributions
-- category-wise auto-resolution rate
-- sensitive vs non-sensitive handling split
-- retrieval usage metrics, including source split and category-match rate
+The paired 100-case ablation results are checked into:
+
+- `evaluation/reports/operational-evaluation-rag/`
+- `evaluation/reports/operational-evaluation-no-rag/`
+- `evaluation/reports/operational-evaluation-comparison/`
+
+Headline outcome from the matched runs:
+
+- both variants completed `100/100` cases
+- both variants auto-resolved `42/100` cases
+- both variants kept sensitive auto-resolution at `0/14`
+- RAG-enabled retrieval averaged `3.0` references per case with `92.67%` category match rate
+- no-RAG reduced mean latency from `25.37 s` to `22.05 s`
+
+The comparison report concludes that, on the current synthetic workload, RAG improves grounding visibility and audit context but does not produce a top-line auto-resolution gain. The deterministic policy gate remains the dominant safety control in both variants.
+
+## Artifacts
+
+Each run writes:
+
+- `results.json`: full case-level output
+- `metrics.json`: aggregate metrics and run summary
+- `results.csv`: flat export for inspection and plotting
+
+The comparison package adds:
+
+- `comparison.md`: human-readable matched-run summary
+- `comparison.json`: structured top-line and case-delta summary
